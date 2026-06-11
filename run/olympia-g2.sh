@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################
-# How g2-olympia Runs
-#   usage: g2-olympia [options]
+# How olympia-g2 Runs
+#   usage: olympia-g2 [options]
 #     -a        Add new players mode
 #     -e        Eat orders from libdir/spool
 #     -f        Don't buffer files for debugging
@@ -19,13 +19,13 @@
 # Testing Strategy
 #
 #  Can we load the database?
-#    g2-olympia -l ./lib
+#    olympia-g2 -l ./lib
 #
 #  Can we run in immediate mode (should be simplest)?
-#    g2-olympia -l ./lib -i
+#    olympia-g2 -l ./lib -i
 #
 #  Can we run a turn?
-#    g2-olympia -l ./lib -r -S
+#    olympia-g2 -l ./lib -r -S
 #
 #  Then
 #    1. Try loading the existing database
@@ -62,7 +62,7 @@ OLYMPIA_COMMAND=olympia
   echo "error: invalid OLYMPIA_FIXTURES"
   exit 2
 }
-OLYMPIA_INPUTS="${OLYMPIA_FIXTURES}/${OLYMPIA_ENGINE}/${OLYMPIA_COMMAND}/fixtures"
+OLYMPIA_INPUTS="${OLYMPIA_FIXTURES}/${OLYMPIA_COMMAND}/fixtures"
 [ -d "${OLYMPIA_INPUTS}" ] || {
   echo "OLYMPIA_FIXTURES   == '${OLYMPIA_FIXTURES}'"
   echo "OLYMPIA_ENGINE     == '${OLYMPIA_ENGINE}'"
@@ -77,7 +77,7 @@ OLYMPIA_INPUTS="${OLYMPIA_FIXTURES}/${OLYMPIA_ENGINE}/${OLYMPIA_COMMAND}/fixture
   echo "error: invalid OLYMPIA_RUN"
   exit 2
 }
-OLYMPIA_OUTPUTS="${OLYMPIA_RUN}/${OLYMPIA_ENGINE}/${OLYMPIA_COMMAND}"
+OLYMPIA_OUTPUTS="${OLYMPIA_RUN}/${OLYMPIA_COMMAND}"
 [ -d "${OLYMPIA_OUTPUTS}" ] || {
   echo "OLYMPIA_RUN        == '${OLYMPIA_RUN}'"
   echo "OLYMPIA_ENGINE     == '${OLYMPIA_ENGINE}'"
@@ -132,8 +132,8 @@ export G2_MAPGEN_SEED_3=26982
 ## run the program in "immediate" mode
 ##   inputs: lib/
 ##   outputs: unknown
-#"${OLYMPIA_BIN}/${OLYMPIA_ENGINE}-${OLYMPIA_COMMAND}" -l ./lib -i </dev/null || {
-#  echo "error: ${OLYMPIA_ENGINE}-${OLYMPIA_COMMAND} failed"
+#"${OLYMPIA_BIN}/${OLYMPIA_COMMAND}-${OLYMPIA_ENGINE}" -l ./lib -i </dev/null || {
+#  echo "error: ${OLYMPIA_COMMAND}-${OLYMPIA_ENGINE} failed"
 #  exit 2
 #}
 #echo " info: command thinks that it ran successfully"
@@ -143,8 +143,8 @@ export G2_MAPGEN_SEED_3=26982
 touch .olympia.before
 rm -rf lib-before lib-after
 cp -a lib lib-before
-"${OLYMPIA_BIN}/${OLYMPIA_ENGINE}-${OLYMPIA_COMMAND}" -r -l ./lib -S </dev/null || {
-  echo "error: ${OLYMPIA_ENGINE}-${OLYMPIA_COMMAND} failed"
+"${OLYMPIA_BIN}/${OLYMPIA_COMMAND}-${OLYMPIA_ENGINE}" -r -l ./lib -S </dev/null || {
+  echo "error: ${OLYMPIA_COMMAND}-${OLYMPIA_ENGINE} failed"
   exit 2
 }
 echo " info: command thinks that it ran successfully"

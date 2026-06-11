@@ -11,8 +11,8 @@ effort is underway to make it compile cleanly on 64-bit systems.
 
 ## Targets
 
-- `g2-olympia` — the main game engine
-- `g2-mapgen` — the map generator (inputs `Map`/`Land`/`Cities`/`Regions`,
+- `olympia-g2` — the main game engine
+- `mapgen-g2` — the map generator (inputs `Map`/`Land`/`Cities`/`Regions`,
   outputs `gate`/`loc`/`road`)
 
 ## Building
@@ -22,11 +22,11 @@ Requires CMake (>= 4.1), Ninja, and a Clang or GCC toolchain.
 ```bash
 cmake --preset debug
 cmake --build --preset debug
-# Binaries: build/debug/g2-olympia, build/debug/g2-mapgen
+# Binaries: build/debug/olympia-g2, build/debug/mapgen-g2
 ```
 
 Presets (see `CMakePresets.json`): `debug` (default), `release`, `asan-ubsan`
-(AddressSanitizer + UndefinedBehaviorSanitizer for `g2-olympia`).
+(AddressSanitizer + UndefinedBehaviorSanitizer for `olympia-g2`).
 
 Without presets:
 
@@ -47,15 +47,15 @@ cmake --build .
 Build first (default `debug` preset), then:
 
 ```bash
-# mapgen: generates gate/loc/road and can be compared to tests/g2/mapgen/golden
-./run/g2/mapgen/mapgen.sh
+# mapgen: generates gate/loc/road and can be compared to tests/mapgen/golden
+./run/mapgen/mapgen.sh
 
 # olympia: extracts fixtures, runs a turn, saves the database
-./run/g2-olympia.sh
+./run/olympia-g2.sh
 
 # compare the olympia run output against the golden snapshot
-./tests/g2/olympia/golden_check.sh           # YES = match
-./tests/g2/olympia/golden_check.sh --update   # refresh the snapshot
+./tests/olympia/golden_check.sh           # YES = match
+./tests/olympia/golden_check.sh --update   # refresh the snapshot
 ```
 
 The scripts auto-detect the repo root and look for binaries at
@@ -63,12 +63,12 @@ The scripts auto-detect the repo root and look for binaries at
 
 ## Layout
 
-- `g2/olympia/` — the G2 engine sources and headers
-- `g2/mapgen/` — the map generator
+- `olympia/` — the G2 engine sources and headers
+- `mapgen/` — the map generator
 - `lib/` — shared support code (entity lists, tiles, roads, allocation, …)
-- `tests/g2/` — golden-test fixtures and golden files
+- `tests/` — golden-test fixtures and golden files
 - `run/` — run/test driver scripts and scratch run directories
-- `g2/doc/` — assorted G2 design/reference notes
+- `doc/` — assorted G2 design/reference notes
 
 ## License
 
