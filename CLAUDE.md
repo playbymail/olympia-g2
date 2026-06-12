@@ -50,6 +50,21 @@ is the gate.
 Scripts auto-detect the repo root and look for binaries at
 `build/<preset>/<target>` (override with `OLYMPIA_PRESET=release ...`).
 
+> **`test-use-const-report-date`** (issue #2) makes the golden gate
+> deterministic. The Olympia Times masthead (`times_masthead()` in
+> `olympia/c2.c`) otherwise embeds the wall-clock date into
+> `run/olympia/lib/times_0`, so its sha256 diverged from the manifest on any
+> day but the capture day. Passing `test-use-const-report-date` on the engine
+> command line sets the `test_use_const_report_date` global (`olympia/main.c`,
+> declared `extern` in `oly.h`); `times_masthead()` then `strcpy`s the fixed
+> date `"January 1, 2000"` instead of calling `time()/localtime()`. The flag is
+> a long-form token pulled out of `argv` (and `argv` compacted) before
+> `getopt()` runs, since getopt only handles single-char options. `run/olympia-g2.sh`
+> passes it on the turn run. It affects **only** the newsletter date — all other
+> output is byte-identical with or without it — and normal play (no flag) still
+> prints the real date. Ported from `../olympia-g3`. The separate `fact/100`
+> `st -32` flicker is unrelated and remains an open Phase 5 item.
+
 ## Layout
 
 - `olympia/` — G2 engine sources (54 `.c`) and headers
