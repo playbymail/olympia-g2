@@ -140,12 +140,16 @@ Deleted three `lib/*.c`/`.h` modules that are in **no** `target_sources` block
 in **G2 both are live** — they appear in `olympia-g2`'s `target_sources` (and
 `checked_alloc.h` in its header set), so they were kept.
 
-**Retained: `lib/plist.c`** (pointer list) and its `lib/lists.h` declarations.
-Unlike `ilist` (which stores `int`), `plist` stores `void *`, so it is wanted by
-the 64-bit refactoring wherever pointers are kept in a list. It is not wired
-into any build target yet; add it to the appropriate `target_sources` in
-`CMakeLists.txt` when the first caller appears. Recover any deleted file from
-git history if ever needed.
+**Retired: `lib/plist.c`** (issue #1, done 2026-06-12). The generic untyped
+`plist` (`typedef void **plist;`) had **zero** call sites — g2's pointer
+collections are all element-typed (`item_ents_list`, `trades_list`, etc. in
+`lib/lists.h`) and `plist.c` was never in any `target_sources`. Deleted the file
+and its typedef + 15 externs from `lib/lists.h`; nothing to change in
+`CMakeLists.txt`. Removing an uncompiled file + an unused typedef is
+output-neutral — binaries byte-identical, golden gate still `YES`. Identical to
+the retirements in sibling `../olympia-g1` (commit dee82d8) and `../olympia-g3`
+(issue 2). Recover from git history if a future caller ever wants it. (`ilist`,
+which stores `int`, correctly stays.)
 
 Verified clean rebuild and `./tests/olympia/golden_check.sh` → `YES`. **Caveat:**
 G2 has a pre-existing build-to-build non-determinism — a single `st -32` line in
