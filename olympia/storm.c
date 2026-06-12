@@ -1224,7 +1224,7 @@ d_death_fog(struct command *c)
 				aura_used == 1 ? "man" : "men",
 				fog_excuse());
 
-		wout(c->who, "Killed %s %s.",
+		wout(c->who, "Killed %s %s of %s.",
 				nice_num(aura_used),
 				aura_used == 1 ? "man" : "men",
 				box_name(target));
