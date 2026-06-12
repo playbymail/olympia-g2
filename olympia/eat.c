@@ -1075,7 +1075,7 @@ eat(char *fnam)
 	fclose(fp);
 
 	if (!okay_flag) {
-		fprintf(stderr, "%s spam, ignoring\n");
+		fprintf(stderr, "%s spam, ignoring\n", fnam);
 		return;
 	}
 
