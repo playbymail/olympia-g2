@@ -14,8 +14,9 @@ function(legacy_build_flags tgt)
         -Wno-dangling-else
         -Wno-deprecated-declarations
         -Wno-extra-tokens
-        -Wno-format
-        -Wno-format-security
+        # -Wno-format / -Wno-format-security retired (issue #5): format checking
+        # is now -Werror=format on olympia-g2, with format-security re-suppressed
+        # there (after -Wformat) until the Class-5 hardening pass.
         -Wno-incompatible-library-redeclaration
         -Wno-incompatible-pointer-types
         -Wno-int-conversion
@@ -137,8 +138,9 @@ set(LEGACY_C_FLAGS
         -Wno-dangling-else
         -Wno-deprecated-declarations
         -Wno-extra-tokens
-        -Wno-format
-        -Wno-format-security
+        # -Wno-format / -Wno-format-security retired (issue #5): format checking
+        # is now -Werror=format on olympia-g2, with format-security re-suppressed
+        # there (after -Wformat) until the Class-5 hardening pass.
         -Wno-incompatible-library-redeclaration
         -Wno-incompatible-pointer-types
         -Wno-int-conversion
@@ -278,6 +280,12 @@ target_compile_options(olympia-g2 PRIVATE
     -Wmissing-prototypes -Werror=missing-prototypes
     -Wstrict-prototypes -Werror=strict-prototypes
     -Wimplicit-function-declaration -Werror=implicit-function-declaration
+    # Format/vararg lockdown (issue #5): the whole format-string class is now a
+    # compile error. -Wformat re-enables -Wformat-security too, so re-suppress
+    # it here — the non-literal-format (Class 5) hardening pass is deferred.
+    -Wformat -Werror=format
+    -Wno-format-security
+    -Wno-format-nonliteral
 )
 
 # Optional ASan/UBSan via the asan-ubsan preset (OLYMPIA_SANITIZE=ON).
