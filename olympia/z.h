@@ -1,3 +1,20 @@
+/*
+ *  BUGFIX (modernization): pull in the real libc prototypes BEFORE the
+ *  engine's bzero/bcopy/abs shadow macros below, so every TU (z.h is the
+ *  chokepoint included first by every engine .c, ahead of oly.h) sees real
+ *  prototypes for the string/stdlib/io functions instead of implicit-int
+ *  declarations -- the 64-bit pointer-truncation hazard (strchr/malloc/...).
+ *  Including these before the macros keeps the macros (and oly.h's wait()
+ *  macro, which collides with sys/wait.h via stdlib.h) intact by ordering.
+ */
+#include <string.h>
+#include <strings.h>	/* bcopy, bzero */
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
 /* BUGFIX (modernization): use varargs and forward declarations */
 #include "legacy.h"
 /* BUGFIX (modernization): update lists to use 64-bit pointers */
@@ -57,6 +74,21 @@ extern void asfail(char *file, int line, char *cond);
 #endif
 
 extern int readfile(char *path);
-extern char *readlin();
-extern char *readlin_ew();
+extern char *readlin(void);
+extern char *readlin_ew(void);
 extern char *eat_leading_trailing_whitespace(char *s);
+
+/*
+ *  BUGFIX (modernization): prototypes for the functions defined in z.c and
+ *  rnd.c.  Those files don't include oly.h, so they never see proto.h; z.h
+ *  is the header they (and their engine-wide callers) do include, so the
+ *  cross-file RNG/utility API is declared here instead.  (rnd and load_seed
+ *  are already declared above / in legacy.h.)
+ */
+extern void lcase(char *s);
+extern void copy_fp(FILE *a, FILE *b);
+extern void init_lower(void);
+extern void test_random(void);
+extern void MD5(void *dest, void *orig, int len);
+extern void save_seed(char *fnam);
+extern int md5_int(int a, int b, int c, int d);

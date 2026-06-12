@@ -93,7 +93,7 @@ prop_city_near_list(int city)
 
 
 void
-seed_city_near_lists()
+seed_city_near_lists(void)
 {
 	int city;
 
@@ -114,7 +114,7 @@ seed_city_near_lists()
 
 
 void
-seed_mob_cookies()
+seed_mob_cookies(void)
 {
 	int i;
 
@@ -133,7 +133,7 @@ seed_mob_cookies()
 
 
 void
-seed_undead_cookies()
+seed_undead_cookies(void)
 {
 	int i;
 
@@ -149,7 +149,7 @@ seed_undead_cookies()
 
 
 void
-seed_weather_cookies()
+seed_weather_cookies(void)
 {
 	int i;
 
@@ -185,7 +185,7 @@ seed_weather_cookies()
 
 
 void
-seed_cookies()
+seed_cookies(void)
 {
 
 	stage("INIT: seed_cookies()");
@@ -203,7 +203,7 @@ seed_cookies()
  */
 
 void
-compute_dist_gate()
+compute_dist_gate(void)
 {
 	int where;
 	exit_views_list l;
@@ -280,7 +280,7 @@ compute_dist_gate()
 
 
 void
-compute_dist()
+compute_dist(void)
 {
 	int i;
 
@@ -297,10 +297,10 @@ compute_dist()
 
 
 int
-int_comp(a, b)
-int *a;
-int *b;
+int_comp(const void *av, const void *bv)
 {
+	int *a = (int *) av;
+	int *b = (int *) bv;
 
 	return *a - *b;
 }
@@ -471,7 +471,7 @@ seed_city(int where)
 
 
 void
-seed_initial_locations()
+seed_initial_locations(void)
 {
 
 	int i;
@@ -491,7 +491,7 @@ seed_initial_locations()
 
 
 static void
-add_city_garrisons()
+add_city_garrisons(void)
 {
 	int where;
 	int garr;
@@ -509,7 +509,7 @@ add_city_garrisons()
 
 
 void
-seed_phase_two()
+seed_phase_two(void)
 {
 	compute_dist();
 	seed_city_near_lists();
@@ -519,7 +519,7 @@ seed_phase_two()
 
 
 void
-seed_taxes()
+seed_taxes(void)
 {
 	int where;
 	int base;

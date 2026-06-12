@@ -19,7 +19,7 @@ int hades_player = 0;
 
 
 void
-create_hades()
+create_hades(void)
 {
 	int r, c;
 	int map[SZ+1][SZ+1];
@@ -184,7 +184,7 @@ create_hades()
 
 
 static void
-create_hades_nasty()
+create_hades_nasty(void)
 {
 	int new;
 	struct loc_info *p;
@@ -279,7 +279,7 @@ auto_hades_sup(int who)
 
 
 void
-auto_hades()
+auto_hades(void)
 {
 	int i;
 	int n_hades = 0;
@@ -305,7 +305,7 @@ auto_hades()
 
 
 int
-random_hades_loc()
+random_hades_loc(void)
 {
 	ilist l = NULL;
 	int i;

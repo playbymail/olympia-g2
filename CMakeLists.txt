@@ -13,11 +13,9 @@ function(legacy_build_flags tgt)
         -Wno-compare-distinct-pointer-types
         -Wno-dangling-else
         -Wno-deprecated-declarations
-        -Wno-deprecated-non-prototype
         -Wno-extra-tokens
         -Wno-format
         -Wno-format-security
-        -Wno-implicit-function-declaration
         -Wno-incompatible-library-redeclaration
         -Wno-incompatible-pointer-types
         -Wno-int-conversion
@@ -138,11 +136,9 @@ set(LEGACY_C_FLAGS
         -Wno-compare-distinct-pointer-types
         -Wno-dangling-else
         -Wno-deprecated-declarations
-        -Wno-deprecated-non-prototype
         -Wno-extra-tokens
         -Wno-format
         -Wno-format-security
-        -Wno-implicit-function-declaration
         -Wno-incompatible-library-redeclaration
         -Wno-incompatible-pointer-types
         -Wno-int-conversion
@@ -215,6 +211,7 @@ target_sources(mapgen-g2 PRIVATE
         mapgen lib
     FILES
         mapgen/z.h
+        mapgen/proto.h
         lib/lists.h
 )
 target_include_directories(mapgen-g2 PRIVATE mapgen/ lib/)
@@ -224,6 +221,10 @@ target_compile_options(mapgen-g2 PRIVATE
     -Wint-to-pointer-cast -Werror=int-to-pointer-cast
     -Wpointer-to-int-cast -Werror=pointer-to-int-cast
     -Wincompatible-pointer-types -Werror=incompatible-pointer-types
+    # Phase 4 - prototypes & declarations
+    -Wmissing-prototypes -Werror=missing-prototypes
+    -Wstrict-prototypes -Werror=strict-prototypes
+    -Wimplicit-function-declaration -Werror=implicit-function-declaration
 )
 
 # ------------------------------------------------------------------------------
@@ -258,6 +259,7 @@ target_sources(olympia-g2 PRIVATE
         olympia/loc.h olympia/loop.h olympia/order.h olympia/sout.h olympia/stack.h
         olympia/swear.h olympia/u.h olympia/use.h
         olympia/z.h
+        olympia/proto.h
         olympia/legacy.h
 
         lib/lists.h lib/checked_alloc.h
@@ -272,6 +274,10 @@ target_compile_options(olympia-g2 PRIVATE
     -Wincompatible-pointer-types -Werror=incompatible-pointer-types
     # Phase 3 - integer conversions
     -Wint-conversion -Werror=int-conversion
+    # Phase 4 - prototypes & declarations
+    -Wmissing-prototypes -Werror=missing-prototypes
+    -Wstrict-prototypes -Werror=strict-prototypes
+    -Wimplicit-function-declaration -Werror=implicit-function-declaration
 )
 
 # Optional ASan/UBSan via the asan-ubsan preset (OLYMPIA_SANITIZE=ON).

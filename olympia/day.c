@@ -37,7 +37,7 @@ near_rocky_coast(int where)
 
 
 static void
-ship_coastal_damage()
+ship_coastal_damage(void)
 {
 	int ship;
 	int n;
@@ -220,7 +220,7 @@ inn_calamity(int where)
 
 
 static void
-random_loc_damage()
+random_loc_damage(void)
 {
 	int where;
 	int depth;
@@ -247,7 +247,7 @@ random_loc_damage()
 
 
 static void
-dogs_bark_at_hidden_chars()
+dogs_bark_at_hidden_chars(void)
 {
 	int where;
 	int flag;
@@ -331,7 +331,7 @@ heal_char_sup(int who)
 
 
 static void
-default_garrison_pay()
+default_garrison_pay(void)
 {
 	int who;
 	int parent;
@@ -355,7 +355,7 @@ default_garrison_pay()
 
 
 static void
-heal_characters()
+heal_characters(void)
 {
 	int who;
 	int n;
@@ -372,7 +372,7 @@ heal_characters()
 
 
 static void
-add_claim_gold()
+add_claim_gold(void)
 {
 	int pl;
 
@@ -389,7 +389,7 @@ add_claim_gold()
 }
 
 static void
-add_noble_points()
+add_noble_points(void)
 {
 	int pl;
 
@@ -428,7 +428,7 @@ add_unformed_sup(int pl)
 
 
 static void
-add_unformed()
+add_unformed(void)
 {
 	int pl;
 
@@ -442,7 +442,7 @@ add_unformed()
 
 
 static void
-increment_current_aura()
+increment_current_aura(void)
 {
 	int who;
 	struct char_magic *p;
@@ -490,7 +490,7 @@ increment_current_aura()
 
 
 static void
-increment_stone_ring_aura()
+increment_stone_ring_aura(void)
 {
 	int who;
 	struct char_magic *p;
@@ -516,7 +516,7 @@ increment_stone_ring_aura()
 
 
 static void
-decrement_ability_shroud()
+decrement_ability_shroud(void)
 {
 	int who;
 	struct char_magic *p;
@@ -533,7 +533,7 @@ decrement_ability_shroud()
 
 
 static void
-decrement_loc_barrier()
+decrement_loc_barrier(void)
 {
 	int where;
 	struct entity_loc *p;
@@ -567,7 +567,7 @@ decrement_loc_barrier()
 
 
 static void
-decrement_region_shroud()
+decrement_region_shroud(void)
 {
 	int where;
 	struct entity_loc *p;
@@ -587,7 +587,7 @@ decrement_region_shroud()
 
 
 static void
-decrement_meditation_hinder()
+decrement_meditation_hinder(void)
 {
 	int who;
 	struct char_magic *p;
@@ -604,7 +604,7 @@ decrement_meditation_hinder()
 
 
 static void
-noncreator_curse_erode()
+noncreator_curse_erode(void)
 {
 	int who;
 	struct item_ent *e;
@@ -707,7 +707,7 @@ announce_month_end(char *msg)
  */
 
 static void
-loyalty_decay()
+loyalty_decay(void)
 {
 	int who;
 	struct entity_char *p;
@@ -770,7 +770,7 @@ loyalty_decay()
 
 
 static void
-relic_decay()
+relic_decay(void)
 {
 	int item;
 	int owner;
@@ -799,7 +799,7 @@ relic_decay()
 
 
 static void
-pillage_decay()
+pillage_decay(void)
 {
 	int where;
 
@@ -1029,7 +1029,7 @@ charge_maint_sup(int who)
 
 
 static void
-charge_maint_costs()
+charge_maint_costs(void)
 {
 	int who;
 
@@ -1050,7 +1050,7 @@ charge_maint_costs()
 
 
 static void
-animal_deaths()
+animal_deaths(void)
 {
 	int who;
 	struct item_ent *e;
@@ -1090,7 +1090,7 @@ animal_deaths()
 
 
 static void
-inn_income()
+inn_income(void)
 {
 	int i;			/* variable to iterate over inns */
 	int owner;		/* owner of inn */
@@ -1157,7 +1157,7 @@ inn_income()
 
 
 static void
-temple_income()
+temple_income(void)
 {
 	int i;			/* variable to iterate over temples */
 	int owner;		/* owner of inn */
@@ -1180,7 +1180,7 @@ temple_income()
 
 
 static void
-collapsed_mine_decay()
+collapsed_mine_decay(void)
 {
 	int i;
 	struct entity_misc *p;
@@ -1205,7 +1205,7 @@ collapsed_mine_decay()
  */
 
 static void
-ghost_warrior_decay()
+ghost_warrior_decay(void)
 {
 	int i;
 	int has;
@@ -1237,7 +1237,7 @@ ghost_warrior_decay()
  */
 
 static void
-corpse_decay()
+corpse_decay(void)
 {
 	int i;
 	int has;
@@ -1269,7 +1269,7 @@ corpse_decay()
  */
 
 static void
-dead_body_rot()
+dead_body_rot(void)
 {
 	int i;
 	int owner;
@@ -1295,7 +1295,7 @@ dead_body_rot()
 
 
 static void
-storm_decay()
+storm_decay(void)
 {
 	int i;
 	struct entity_misc *p;
@@ -1317,7 +1317,7 @@ storm_decay()
 
 
 static void
-storm_owner_touch_loc()
+storm_owner_touch_loc(void)
 {
 	int i;
 	int owner;
@@ -1341,7 +1341,7 @@ storm_owner_touch_loc()
 
 
 static void
-storm_move()
+storm_move(void)
 {
 	int i;
 	struct entity_misc *p;
@@ -1370,7 +1370,7 @@ storm_move()
 
 
 static void
-quest_decay()
+quest_decay(void)
 {
 	int where;
 
@@ -1384,7 +1384,7 @@ quest_decay()
 
 
 static void
-collect_taxes()
+collect_taxes(void)
 {
 	int fort;
 	int prov;
@@ -1417,7 +1417,7 @@ collect_taxes()
 
 
 void
-compute_civ_levels()
+compute_civ_levels(void)
 {
 	int where;
 	int flag;
@@ -1555,7 +1555,7 @@ compute_civ_levels()
 
 
 void
-post_production()
+post_production(void)
 {
 
 	compute_civ_levels();
@@ -1568,7 +1568,7 @@ post_production()
 
 
 static void
-hide_mage_decay()
+hide_mage_decay(void)
 {
 	int i;
 	struct char_magic *p;
@@ -1584,7 +1584,7 @@ hide_mage_decay()
 
 
 static void
-link_decay()
+link_decay(void)
 {
 	int i;
 	struct entity_subloc *p;
@@ -1615,7 +1615,7 @@ link_decay()
  */
 
 static void
-move_city_gold()
+move_city_gold(void)
 {
 	int i;
 	int prov;
@@ -1652,7 +1652,7 @@ move_city_gold()
  */
 
 static void
-special_locs_open()
+special_locs_open(void)
 {
 	int i;
 
@@ -1688,7 +1688,7 @@ special_locs_open()
 
 
 static void
-special_locs_close()
+special_locs_close(void)
 {
 	int i;
 
@@ -1724,7 +1724,7 @@ special_locs_close()
 
 
 static void
-clear_orders_sent()
+clear_orders_sent(void)
 {
 	int pl;
 	struct entity_player *p;
@@ -1741,7 +1741,7 @@ clear_orders_sent()
 
 
 void
-post_month()
+post_month(void)
 {
 
 	stage("post_month()");
@@ -1803,7 +1803,7 @@ post_month()
 
 
 void
-daily_events()
+daily_events(void)
 {
 	static int curse_erode_day = 0;
 	static ilist weather_days = NULL;
@@ -1823,7 +1823,6 @@ daily_events()
 	if (ilist_len(weather_days) == 0)
 	{
 		int i;
-		extern int int_comp();
 
 		for (i = 1; i <= MONTH_DAYS; i++)
 			ilist_append(&weather_days, i);
@@ -1895,7 +1894,7 @@ touch_loc(int who)
 
 
 void
-init_locs_touched()
+init_locs_touched(void)
 {
 	int who;
 

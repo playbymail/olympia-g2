@@ -1264,3 +1264,14 @@ extern void style(int n);
 
 #define		MAP_MT_OLY		15350
 
+
+/*
+ *  Generated ANSI prototypes for every cross-file (non-static) function.
+ *  Included last, after all type definitions above, so the prototypes can
+ *  reference the engine structs/typedefs.  stdio.h supplies FILE, used by
+ *  a few of the prototypes.  (Functions in z.c and rnd.c are declared in
+ *  z.h instead, since those files don't include oly.h.)
+ */
+#include <stdio.h>
+#include "proto.h"
+

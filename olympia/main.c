@@ -20,9 +20,7 @@ int flush_always = FALSE;
 int time_self = FALSE;		/* print timing info */
 int save_flag = FALSE;
 
-int main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
 	extern int optind, opterr;
 	extern char *optarg;
@@ -239,7 +237,7 @@ char **argv;
 }
 
 
-int call_init_routines()
+int call_init_routines(void)
 {
 
 	init_lower();
@@ -250,7 +248,7 @@ int call_init_routines()
 }
 
 
-int write_totimes()
+int write_totimes(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -282,7 +280,7 @@ int write_totimes()
 }
 
 
-int write_email()
+int write_email(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -353,7 +351,7 @@ list_a_player(FILE *fp, int pl, int *flag)
 }
 
 
-int write_player_list()
+int write_player_list(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -408,7 +406,7 @@ int write_forward_sup(int who_for, int target, FILE *fp)
 }
 
 
-int write_forwards()
+int write_forwards(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -467,7 +465,7 @@ int write_faction_sup(int who_for, int target, FILE *fp)
 }
 
 
-int write_factions()
+int write_factions(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -597,7 +595,7 @@ send_rep(int pl, int turn)
 }
 
 
-int mail_reports()
+int mail_reports(void)
 {
 	int pl;
 
@@ -611,15 +609,14 @@ int mail_reports()
 }
 
 int
-v_remail(c)
-struct command *c;
+v_remail(struct command *c)
 {
 	mail_reports();
 	setup_html_all();
 	return TRUE;
 }
 
-int setup_html_all()
+int setup_html_all(void)
 {
 	int pl;
 
@@ -636,8 +633,7 @@ int setup_html_all()
 	copy_public_turns();
 }
 
-int setup_html_dir(pl)
-int pl;
+int setup_html_dir(int pl)
 {
 	char fnam[LEN];
 	char fnam2[LEN];
@@ -668,8 +664,7 @@ int pl;
 	fclose(fp);
 }
 
-int set_html_pass(pl)
-int pl;
+int set_html_pass(int pl)
 {
 	char buf[LEN];
 	struct entity_player *p;
@@ -689,8 +684,7 @@ int pl;
 	system(buf);
 }
 
-int output_html_rep(pl)
-int pl;
+int output_html_rep(int pl)
 {
 	char fnam[LEN];
 	char fnam2[LEN];
@@ -707,7 +701,7 @@ int pl;
 	system(fnam2);
 }
 
-int copy_public_turns()
+int copy_public_turns(void)
 {
 	char fnam[LEN];
 	char cmd[LEN];

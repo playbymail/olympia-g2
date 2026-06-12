@@ -19,7 +19,6 @@ void *
 my_malloc(unsigned size)
 {
 	char *p;
-	extern char *malloc();
 
 	size += sizeof(int);
 
@@ -45,8 +44,6 @@ void *
 my_realloc(void *ptr, unsigned size)
 {
 	char *p = ptr;
-	extern char *realloc();
-	extern char *malloc();
 
 	if (p == NULL)
 		return my_malloc(size);
@@ -110,8 +107,7 @@ asfail(char *file, int line, char *cond)
 
 
 void
-lcase(s)
-char *s;
+lcase(char *s)
 {
 
 	while (*s)
@@ -228,7 +224,7 @@ readfile(char *path)
 
 
 char *
-readlin()
+readlin(void)
 {
 	static char *buf = NULL;
 	static unsigned int size = 0;
@@ -277,7 +273,7 @@ readlin()
 
 
 char *
-readlin_ew()
+readlin_ew(void)
 {
 	char *line;
 	char *p;
@@ -308,9 +304,7 @@ readlin_ew()
 #define	COPY_LEN	1024
 
 void
-copy_fp(a, b)
-FILE *a;
-FILE *b;
+copy_fp(FILE *a, FILE *b)
 {
 	char buf[COPY_LEN];
 
@@ -323,7 +317,7 @@ char lower_array[256];
 
 
 void
-init_lower()
+init_lower(void)
 {
 	int i;
 

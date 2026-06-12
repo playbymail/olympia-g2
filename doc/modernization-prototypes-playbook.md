@@ -455,18 +455,48 @@ Note: `tests/mapgen/golden` is a **stale 32-bit baseline** and diverges from
 > intermittently gains/loses a single `` st -32 `` line. It flickers across
 > *clean rebuilds of byte-identical source* (a given binary is deterministic
 > across reruns, but two clean builds of the same source can disagree on this
-> one line). **Working hypothesis: this is a bug from compiling with missing
-> prototypes in 64-bit mode** — an implicitly-declared function returning a
-> pointer truncated through `int`, or similar — so **Phase 4 is expected to make
-> it deterministic.** Until then `golden_check.sh` holds `fact/100` out of the
-> manifest and compares it line-by-line against a committed reference: a lone
-> `` st -32 `` add/remove still passes but is reported (`note: known 'st -32'
-> flicker`), so the bug stays visible; any other difference fails. **When Phase
-> 4 lands, re-check whether the flicker is gone — if so, fold `fact/100` back
-> into the manifest and delete the special case in `golden_check.sh`.** Any diff
-> beyond that one line, at any time, is a real regression.
+> one line). The original hypothesis was a missing-prototype / 64-bit bug. **That
+> is now disproven: Phase 4 is complete (all three classes 0, `-Werror`
+> enforced) and the flicker survived** — re-checked with 6 clean rebuilds, 5
+> with no `` st -32 `` line and 1 with it. So it is *not* a prototype bug. New
+> leading suspect: an uninitialized read / UB or address-dependent ordering;
+> probe it with the `asan-ubsan` preset in Phase 5. `golden_check.sh` still holds
+> `fact/100` out of the manifest and compares it line-by-line against a committed
+> reference: a lone `` st -32 `` add/remove passes but is reported (`note: known
+> 'st -32' flicker`); any other difference fails. **Keep the special case — do
+> NOT fold `fact/100` back into the manifest.** Any diff beyond that one line, at
+> any time, is a real regression.
 
 ---
+
+## G2 results & engine-specific traps (done)
+
+G2's Phase 4 is complete: 65 K&R defs (38 mapgen / 27 olympia), ~270 empty-paren
+defs, 15 qsort comparators, `olympia/proto.h` (653 protos) + `mapgen/proto.h`
+(75). All three classes 0, `-Werror` on both targets, golden unchanged. Three
+traps that did **not** appear in G1 and are worth carrying to g3/tag:
+
+- **Variadic conversion + arm64 ABI are coupled.** A "poor man's varargs"
+  function (G2: `queue(int,char*,long a1..a9)` → `vsprintf`) must become
+  `(...)` *and* gain a visible prototype at every call site in the **same
+  step**. On Apple arm64, calling a variadic function with no prototype in scope
+  uses the fixed-arity register convention while the variadic callee reads
+  varargs off the stack → garbage → **segfault** (G2 crashed in
+  `queue_npc_orders`). Converting the definition first, before the generated
+  `proto.h` was wired in, broke the run. Do both in one move.
+- **A second RNG translation unit.** G2 replaced G1's `drand48`/`z.c` RNG with
+  an MD5-based `rnd.c` (one per target) that includes *neither* `z.h` nor
+  `oly.h`. Treat it like `z.c`: make it `#include "z.h"` (safe — the
+  `bzero`/`bcopy` macros are `#ifdef SYSV`, off on macOS, so the golden-critical
+  hash is untouched) and declare its cross-file functions in `z.h`. Make the
+  purely file-local helpers (`byteSwap`, mapgen's `MD5`) `static`.
+- **File-private macros in a prototype's parameter type.** G2's `tunnel.c` has
+  `print_map(int map[SZ+2][SZ+2][MAX_LEVELS], int l)` where `SZ`/`MAX_LEVELS`
+  are `#define`d inside that `.c`. Such a function cannot go in `proto.h` (the
+  macros aren't in scope there). If it's file-local, make it `static`; if it's
+  also *unused* (so `static` would warn), keep it non-static with a **local**
+  prototype placed after the macro defs. Generally: file-local non-static funcs
+  → `static`; only the genuinely cross-file ones belong in `proto.h`.
 
 ## Reusable tooling
 

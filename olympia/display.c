@@ -377,7 +377,7 @@ priest_s(int n)
 
 
 int
-emperor()
+emperor(void)
 {
 	int who = 0;
 	int where;

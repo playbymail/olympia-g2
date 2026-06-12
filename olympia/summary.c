@@ -12,10 +12,10 @@
  */
 
 static
-int rank_comp(a, b)
-int *a;
-int *b;
+int rank_comp(const void *av, const void *bv)
 {
+	int *a = (int *) av;
+	int *b = (int *) bv;
 
 	return bx[*b]->temp - bx[*a]->temp;
 }
@@ -41,7 +41,7 @@ ranking(int n)
 
 
 static char *
-top_rank()
+top_rank(void)
 {
 	int i;
 	int n = 0;
@@ -124,7 +124,7 @@ static int nother;
 
 
 static void
-collect_game_totals()
+collect_game_totals(void)
 {
 	int i, j;
 
@@ -159,7 +159,7 @@ collect_game_totals()
 
 
 static void
-summary_units()
+summary_units(void)
 {
 	int i;
 
@@ -176,7 +176,7 @@ summary_units()
 
 
 static void
-summary_skills()
+summary_skills(void)
 {
 	int pl, who;
 	int i;
@@ -228,7 +228,7 @@ summary_skills()
 
 
 static void
-summary_spells()
+summary_spells(void)
 {
 	int pl, who;
 	int i;
@@ -280,7 +280,7 @@ summary_spells()
 
 
 static void
-summary_men()
+summary_men(void)
 {
 	int i;
 	struct item_ent *e;
@@ -303,7 +303,7 @@ summary_men()
 
 
 static void
-summary_gold()
+summary_gold(void)
 {
 	int i;
 
@@ -320,7 +320,7 @@ summary_gold()
 
 
 static void
-summary_land_owned()
+summary_land_owned(void)
 {
 	int i, j;
 	ilist l;
@@ -342,7 +342,7 @@ summary_land_owned()
 
 
 static void
-summary_provinces()
+summary_provinces(void)
 {
 	int i;
 	int pl;
@@ -432,7 +432,7 @@ summary_sublocs()
 
 
 void
-summary_report()
+summary_report(void)
 {
 	int pl;
 	char *s, *p;

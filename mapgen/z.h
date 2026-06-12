@@ -1,4 +1,15 @@
-
+/*
+ *  BUGFIX (modernization): real libc prototypes before the abs shadow macro
+ *  below, so every mapgen TU sees real string/stdlib/io prototypes instead of
+ *  implicit-int declarations (the 64-bit pointer-truncation hazard).
+ */
+#include <string.h>
+#include <strings.h>	/* bcopy, bzero */
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #define	TRUE	1
 #define	FALSE	0
@@ -57,5 +68,12 @@ extern void asfail(char *file, int line, char *cond);
 
 
 extern int readfile(char *path);
-extern char *readlin();
-extern char *readlin_ew();
+extern char *readlin(void);
+extern char *readlin_ew(void);
+
+/* BUGFIX (modernization): prototypes for the remaining mapgen z.c/rnd.c funcs */
+extern void lcase(char *s);
+extern void copy_fp(FILE *a, FILE *b);
+extern void init_lower(void);
+extern void load_seed(void);
+extern void save_seed(void);

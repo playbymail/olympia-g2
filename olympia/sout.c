@@ -23,7 +23,7 @@ char *spaces;
 int spaces_len;
 
 
-int init_spaces()
+int init_spaces(void)
 {
 	int i;
 	// extern char *malloc();
@@ -43,7 +43,7 @@ int out_alt_who = 0;
 
 
 void
-initialize_buffer()
+initialize_buffer(void)
 {
 	int i;
 
@@ -203,14 +203,14 @@ grab_fp(int player)
 
 
 void
-open_logfile_nondestruct()
+open_logfile_nondestruct(void)
 {
 	mkdir(sout("%s/log", libdir), 0755);
 }
 
 
 void
-open_logfile()
+open_logfile(void)
 {
 
 	if (immediate)
@@ -222,7 +222,7 @@ open_logfile()
 
 
 void
-close_logfile()
+close_logfile(void)
 {
 	struct fp_ent *p;
 	struct fp_ent *next;
@@ -523,7 +523,7 @@ html(int who, const char *format, ...)
 
 
 ilist
-save_output_vector()
+save_output_vector(void)
 {
 	ilist tmp;
 
@@ -544,7 +544,7 @@ restore_output_vector(ilist t)
 
 
 void
-vector_clear()
+vector_clear(void)
 {
 
 	ilist_clear(&out_vector);
@@ -552,7 +552,7 @@ vector_clear()
 
 
 void
-vector_players()
+vector_players(void)
 {
 	int pl;
 

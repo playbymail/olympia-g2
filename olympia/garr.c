@@ -184,7 +184,7 @@ players_who_rule_here(int where)
 
 #if 0
 void
-touch_garrison_locs()
+touch_garrison_locs(void)
 {
 	int garr;
 	int where;
@@ -424,7 +424,7 @@ v_pledge(struct command *c)
 
 
 void
-garrison_gold()
+garrison_gold(void)
 {
 	int garr;
 	int where;
@@ -593,7 +593,7 @@ rank_s(int who)
 
 
 static void
-find_kings()
+find_kings(void)
 {
 	int reg;
 	int where;
@@ -662,7 +662,7 @@ det_noble_rank_sup(int who)
 
 
 void
-determine_noble_ranks()
+determine_noble_ranks(void)
 {
 	int garr;
 	int owner;
@@ -991,7 +991,7 @@ v_decree(struct command *c)
 
 
 void
-ping_garrisons()
+ping_garrisons(void)
 {
 	int garr;
 	int where;

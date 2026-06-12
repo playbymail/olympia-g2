@@ -86,19 +86,19 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 2 | `incompatible-pointer-types` | ✅ enforced |
 | 3 | `int-conversion` | ✅ enforced |
 | 3.5 | **Remove dead/unused source files** | ✅ done |
-| 4 | `strict-prototypes`, `missing-prototypes`, `implicit-function-declaration` | 🔜 next |
-| 5 | `missing-declarations` + sanitizers in CI | ⬜ wired (asan preset), not enforced |
+| 4 | `strict-prototypes`, `missing-prototypes`, `implicit-function-declaration` | ✅ enforced (`-Werror`) |
+| 5 | `missing-declarations` + sanitizers in CI | ⬜ wired (asan preset), not enforced (next) |
 
-Phases 1–3.5 are complete and locked in — the dangerous 32→64-bit pointer/int
-hazards (bad casts and int/pointer conversions) build clean as errors, and the
-dead source files are gone. The remaining work is Phase 4 (prototypes &
-declarations), then Phase 5 (lock down).
+Phases 1–4 are complete and locked in — the dangerous 32→64-bit pointer/int
+hazards (bad casts, int/pointer conversions, and implicitly-declared functions
+whose `int` return truncates a pointer) build clean as errors, the dead source
+files are gone, and every function now has a real prototype. The remaining work
+is Phase 5 (`missing-declarations` + sanitizers in CI).
 
-> **Note:** the sister **G1** repo (`../olympia-g1`) has already completed
-> Phase 3.5 and Phase 4. Its `CLAUDE.md` records exactly what those changes
-> were, and its method is captured in `doc/modernization-prototypes-playbook.md`
-> (copied into this repo) and the helper scripts in `doc/phase4-tools/`. Use
-> them as the template for doing the same work here.
+> **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
+> and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
+> in `doc/modernization-prototypes-playbook.md` (with G2-specific notes) plus
+> the helper scripts in `doc/phase4-tools/`. G3/TAG can use the same template.
 
 > **Caution on the prototype probe:** do **not** use `-Wold-style-definition` to
 > find K&R *definitions* — clang reports those under
@@ -136,50 +136,76 @@ Verified clean rebuild and `./tests/olympia/golden_check.sh` → `YES`. **Caveat
 G2 has a pre-existing build-to-build non-determinism — a single `st -32` line in
 `fact/100` flickers across clean rebuilds of *byte-identical* source (proven by
 rebuilding the unmodified tree twice and observing the same flicker), so it is
-not caused by this change. Working hypothesis: a missing-prototype / 64-bit bug
-(implicit declaration truncating a pointer through `int`), so **Phase 4 may make
-it deterministic** — re-check then. `golden_check.sh` holds `fact/100` out of
-its hash manifest and tolerates only the lone `st -32` flicker (reporting it),
-failing on any other diff; see the playbook's "Verification gate" note.
+not caused by this change. **Update (Phase 4 done): the flicker is NOT a
+missing-prototype bug.** Re-checked after Phase 4 with all three warning classes
+at 0 and `-Werror` enforced — 6 clean rebuilds, 5 with no `st -32` line and 1
+with it — so prototypes were not the cause. `golden_check.sh` still holds
+`fact/100` out of its hash manifest and tolerates only the lone `st -32` flicker
+(reporting it), failing on any other diff. Next probe: the `asan-ubsan` preset
+(uninitialized read / UB is the new leading suspect) — see Phase 5.
 
-### Phase 4 — Prototypes & declarations (next)
+### Phase 4 — Prototypes & declarations ✅ done
 
-Goal: make `strict-prototypes`, `missing-prototypes`, and
-`implicit-function-declaration` build clean as `-Werror` on both targets, then
-remove the dead `-Wno-implicit-function-declaration` /
-`-Wno-deprecated-non-prototype` suppressions from `LEGACY_C_FLAGS`. Follow the
-full method and trap list in `doc/modernization-prototypes-playbook.md`; the
-helper scripts in `doc/phase4-tools/` automate the mechanical edits:
+`strict-prototypes`, `missing-prototypes`, and `implicit-function-declaration`
+are now `-Werror` on both targets (inlined into each `target_compile_options`
+block) and the dead `-Wno-implicit-function-declaration` /
+`-Wno-deprecated-non-prototype` suppressions are removed from `LEGACY_C_FLAGS`
+(and the mirrored `legacy_build_flags()` scaffolding). All three classes measure
+**0** across the tree; debug and release build clean; golden output unchanged.
 
-- `kr2ansi.py` — convert K&R definitions to ANSI prototypes.
-- `fix_void_defs.py` — convert empty-paren `name()` definitions to `name(void)`.
-- `gen_proto3.py` — generate a prototype header per target.
-- `fix_comp.py` — canonicalize `qsort` comparators to
-  `(const void *, const void *)`.
+What it took (full method + traps in `doc/modernization-prototypes-playbook.md`,
+helper scripts in `doc/phase4-tools/`):
 
-Expected shape of the work (from G1, adapt to G2):
+- Converted **65** K&R definitions to ANSI (38 in mapgen, 27 in olympia) with
+  `kr2ansi.py`, and the ~270 empty-paren `name()` definitions to `name(void)`
+  with `fix_void_defs.py` (probe with `-Wdeprecated-non-prototype`, *not*
+  `-Wold-style-definition`).
+- Canonicalised the **15** `qsort` comparators to
+  `(const void *, const void *)` with local casts (G1's 14 + `rank_comp`).
+- Generated a prototype header per target — **`olympia/proto.h`** (included at
+  the end of `oly.h`, after the type defs and a `#include <stdio.h>` for `FILE`;
+  forward-declares the private structs `build_ent`/`fight`/`harvest`/`make`/
+  `wield`) and **`mapgen/proto.h`** (included in `mapgen.c` after the private
+  `struct tile`). This cleared all `missing-prototypes`.
+- Deleted the `use.c`/`glob.c` command-handler decl blocks and scattered local
+  `extern T foo();` decls; gave the surviving header empty-paren decls real
+  prototypes; fixed the `loop.h` `loop_known` macro's embedded `int_comp` decl.
+- Added the real libc headers (`string.h`, `strings.h`, `stdlib.h`, `unistd.h`,
+  `time.h`, `fcntl.h`, `sys/stat.h`) at the **top of `z.h` / `mapgen/z.h`**,
+  before the engine's `bzero`/`bcopy`/`abs` shadow macros (and ahead of
+  `oly.h`'s `wait` macro, which collides with `sys/wait.h` via `stdlib.h`).
+  `z.h` is the chokepoint every engine TU includes first.
+- Latent bugs the prototypes exposed, fixed as real bugs:
+  `make_appropriate_subloc(row, col, 0)` called with a dead 3rd arg (×3 in
+  `mapgen.c`); `queue()` poor-man's-varargs made genuinely variadic
+  (`vsprintf`); a wrong-return-type `extern char *clear_wait_parse()` decl in
+  `eat.c` (the function returns `void`); orphan decls `fetch_inside_name`
+  (mapgen) and `wrap_done`/olympia `dir_assert` deleted.
 
-- Convert all K&R definitions to ANSI and empty-paren definitions to `(void)`
-  (probe with `-Wdeprecated-non-prototype`, *not* `-Wold-style-definition`).
-- Generate a prototype header per target — `olympia/proto.h` (include at the
-  end of `oly.h`, after the type defs and a `#include <stdio.h>` for `FILE`)
-  and `mapgen/proto.h`. `z.c` doesn't include `oly.h`, so its functions are
-  declared in `z.h`. This single move clears nearly all of `missing-prototypes`
-  and the internal `implicit-function-declaration` calls.
-- Delete redundant empty-paren forward declarations and give surviving header
-  decls real prototypes.
-- Add the real libc headers (`string.h`, `stdlib.h`, `unistd.h`, `time.h`,
-  `fcntl.h`, `sys/stat.h`) at the **top of `z.h` / `mapgen/z.h`**, before the
-  engine's `bzero`/`bcopy`/`abs` shadow macros (and ahead of `oly.h`'s `wait`
-  macro, which collides with `sys/wait.h` on macOS). `z.h` is the chokepoint
-  every engine TU includes first.
-- Expect the new prototypes to expose latent bugs (arg-count mismatches,
-  wrong return types, accidental non-variadic decls, orphan decls). Fix them as
-  real bugs and note them in the change.
+**G2-specific notes (differs from G1):**
 
-The golden output must stay byte-identical through all of this.
+- **`queue()` + arm64 ABI.** The poor-man's-varargs `queue()` must become
+  variadic *and* gain its `proto.h` prototype in the **same step**. On Apple
+  arm64 a variadic call without a visible prototype uses the fixed-arity
+  register convention while the callee reads the stack → **segfault** (it crashed
+  `queue_npc_orders`). Converting `queue` to variadic before `proto.h` was wired
+  in broke the run; doing both together fixed it.
+- **MD5 RNG in `rnd.c`** (G2 replaced G1's `drand48`/z.c RNG). `olympia/rnd.c`
+  and `mapgen/rnd.c` include neither `z.h` nor `oly.h`; made them `#include
+  "z.h"` (safe — the `bzero`/`bcopy` macros are `#ifdef SYSV`, off on macOS, so
+  the golden-critical MD5 is untouched) and declared their cross-file funcs
+  (`MD5`, `save_seed`, `md5_int`) in `z.h` alongside `rnd`. Made the purely
+  internal helpers (`byteSwap`, and mapgen's `MD5`) `static`.
+- **`tunnel.c`** (G2-only). `create_tunnels` is cross-file (→ `proto.h`); the
+  other four funcs are file-local — made `random_subworld_loc`/`fill_dir_exits`/
+  `create_tunnel_set` `static`, and gave the dead `print_map` (whose signature
+  uses file-private `SZ`/`MAX_LEVELS` macros, so it can't go in `proto.h`) a
+  local prototype, kept non-static to avoid an unused-function warning.
 
-### Phase 5 — Lock down (later)
+### Phase 5 — Lock down (next)
 
 Enable `-Werror=missing-declarations` and wire the `asan-ubsan` preset into CI
-so sanitizers run against the golden flow.
+so sanitizers run against the golden flow. **Also use the sanitizer run to chase
+the `st -32` flicker** — Phase 4 ruled out missing prototypes, and an
+uninitialized read / UB is the new leading suspect (see the Phase 3.5 caveat
+above and the `st-32` memory note).

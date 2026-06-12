@@ -12,7 +12,7 @@ int under_region = 0;
 #define	SUB_SZ	10		/* SZ x SZ is size of Subworld */
 
 static void
-create_subworld()
+create_subworld(void)
 {
 	int r, c;
 	int map[SUB_SZ+1][SUB_SZ+1];
@@ -103,8 +103,8 @@ create_subworld()
 
 
 
-int
-random_subworld_loc()
+static int
+random_subworld_loc(void)
 {
 	ilist l = NULL;
 	int i;
@@ -133,6 +133,13 @@ random_subworld_loc()
 #define		SZ		7	/* 5 x 5 */
 #define		MAX_LEVELS	25
 
+/*
+ *  print_map is a dead debug helper whose signature uses the file-private
+ *  SZ/MAX_LEVELS macros, so it cannot live in proto.h.  Declare it locally
+ *  (kept non-static to avoid an unused-function warning) to satisfy
+ *  -Wmissing-prototypes at its definition below.
+ */
+void print_map(int map[SZ+2][SZ+2][MAX_LEVELS], int l);
 
 
 static int tun_total_locs;
@@ -158,7 +165,7 @@ print_map(int map[SZ+2][SZ+2][MAX_LEVELS], int l)
 }
 
 
-void
+static void
 fill_dir_exits(int where)
 {
 	struct entity_loc *p;
@@ -170,7 +177,7 @@ fill_dir_exits(int where)
 }
 
 static int
-new_tunnel()
+new_tunnel(void)
 {
 	int n;
 
@@ -307,7 +314,7 @@ add_chamber(int map[SZ+2][SZ+2][MAX_LEVELS], int l)
 
 static int subworld_city;
 
-int
+static int
 create_tunnel_set(int city, int subworld_link)
 {
 	int map[SZ+2][SZ+2][MAX_LEVELS];
@@ -453,7 +460,7 @@ create_tunnel_set(int city, int subworld_link)
 
 
 void
-create_tunnels()
+create_tunnels(void)
 {
 	int city;
 	int sum = 0;

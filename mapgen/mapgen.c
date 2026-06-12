@@ -198,10 +198,7 @@ int num_islands = 0;
 
 struct tile *map[MAX_ROW][MAX_COL];
 
-struct tile *adjacent_tile_terr();
-struct tile *adjacent_tile_water();
-struct tile *adjacent_tile_sup();
-char *fetch_inside_name();
+#include	"proto.h"	/* BUGFIX (modernization): cross-file prototypes */
 
 #define		MAX_SUBLOC	20000
 
@@ -214,7 +211,7 @@ FILE *loc_fp;
 FILE *gate_fp;
 FILE *road_fp;
 
-int main()
+int main(void)
 {
 
 	clear_alloc_flag();
@@ -264,7 +261,7 @@ int main()
 }
 
 
-int open_fps()
+int open_fps(void)
 {
 
 	loc_fp = fopen("loc", "w");
@@ -290,7 +287,7 @@ int open_fps()
 }
 
 
-int clear_alloc_flag()
+int clear_alloc_flag(void)
 {
 	int i;
 
@@ -300,9 +297,7 @@ int clear_alloc_flag()
 
 
 int
-rnd_alloc_num(low, high)
-int low;
-int high;
+rnd_alloc_num(int low, int high)
 {
         int n;
         int i;
@@ -329,7 +324,7 @@ int high;
 }
 
 
-int map_init()
+int map_init(void)
 {
 	int i, j;
 
@@ -339,7 +334,7 @@ int map_init()
 }
 
 
-int read_map()
+int read_map(void)
 {
 	char buf[LEN];
 	int row, col;
@@ -689,11 +684,7 @@ int read_map()
 }
 
 
-int add_road(from, to_loc, hidden, name)
-struct tile *from;
-int to_loc;
-int hidden;
-char *name;
+int add_road(struct tile *from, int to_loc, int hidden, char *name)
 {
 	struct road *r;
 
@@ -707,11 +698,7 @@ char *name;
 }
 
 
-int link_roads(from, to, hidden, name)
-struct tile *from;
-struct tile *to;
-int hidden;
-char *name;
+int link_roads(struct tile *from, struct tile *to, int hidden, char *name)
 {
 	int i;
 	int n = 0;
@@ -757,7 +744,7 @@ char *name;
 }
 
 
-int alloc_inside()
+int alloc_inside(void)
 {
 	int i;
 
@@ -768,7 +755,7 @@ int alloc_inside()
 }
 
 
-int dump_continents()
+int dump_continents(void)
 {
 	int i;
 	int n;
@@ -784,8 +771,7 @@ int dump_continents()
 }
 
 
-int print_inside_locs(n)
-int n;
+int print_inside_locs(int n)
 {
 	int i;
 	int count = 0;
@@ -811,7 +797,7 @@ int n;
 }
 
 
-int print_map()
+int print_map(void)
 {
 	int row, col;
 	int flag;
@@ -898,7 +884,7 @@ int print_map()
 }
 
 
-int print_sublocs()
+int print_sublocs(void)
 {
 	int i;
 	int sl;
@@ -951,8 +937,7 @@ int print_sublocs()
 }
 
 
-int print_subloc_gates(n)		/* and inside buildings... */
-int n;
+int print_subloc_gates(int n)		/* and inside buildings... */
 {
 	int i;
 	int count = 0;
@@ -1060,7 +1045,7 @@ rc_to_region(int row, int col)
 }
 
 
-int dir_assert()
+int dir_assert(void)
 {
 	int row, col, reg;
 
@@ -1088,9 +1073,7 @@ int dir_assert()
 
 
 struct tile *
-adjacent_tile_water(row, col)
-int row;
-int col;
+adjacent_tile_water(int row, int col)
 {
 	struct tile *p;
 
@@ -1118,9 +1101,7 @@ int col;
 
 
 struct tile *
-adjacent_tile_terr(row, col)
-int row;
-int col;
+adjacent_tile_terr(int row, int col)
 {
 	struct tile *p;
 
@@ -1154,9 +1135,7 @@ int col;
  *  direction.
  */
 
-int prov_dest(t, dir)
-struct tile *t;
-int dir;
+int prov_dest(struct tile *t, int dir)
 {
 	int row;
 	int col;
@@ -1211,10 +1190,7 @@ int dir;
  */
 
 struct tile *
-adjacent_tile_sup(row, col, dir)
-int row;
-int col;
-int dir;
+adjacent_tile_sup(int row, int col, int dir)
 {
 
 	switch (dir)
@@ -1267,9 +1243,7 @@ int dir;
 }
 
 
-int is_port_city(row, col)
-int row;
-int col;
+int is_port_city(int row, int col)
 {
 	struct tile *n, *s, *e, *w;
 
@@ -1288,7 +1262,7 @@ int col;
 }
 
 
-int randomize_dir_vector()
+int randomize_dir_vector(void)
 {
 	int i;
 	int one, two, tmp;
@@ -1309,9 +1283,7 @@ int randomize_dir_vector()
 }
 
 
-int bridge_map_hole_sup(row, col)
-int row;
-int col;
+int bridge_map_hole_sup(int row, int col)
 {
 	struct tile *n, *s, *e, *w;
 	struct tile *nw, *sw, *ne, *se;
@@ -1451,7 +1423,7 @@ char *bridge_dir_s[] = {
  *  Won't put two roads in the same square
  */
 
-int bridge_map_holes()
+int bridge_map_holes(void)
 {
 	int row, col;
 	int n;
@@ -1469,9 +1441,7 @@ int bridge_map_holes()
 }
 
 
-int bridge_corner_sup(row, col)
-int row;
-int col;
+int bridge_corner_sup(int row, int col)
 {
 	struct tile *n, *s, *e, *w;
 	struct tile *nw, *sw, *ne, *se;
@@ -1586,7 +1556,7 @@ int col;
 
 
 
-int bridge_caddy_corners()
+int bridge_caddy_corners(void)
 {
 	int row, col;
 
@@ -1598,9 +1568,7 @@ int bridge_caddy_corners()
 }
 
 
-int bridge_mountain_sup(row, col)
-int row;
-int col;
+int bridge_mountain_sup(int row, int col)
 {
 	struct tile *from;
 	struct tile *to;
@@ -1636,7 +1604,7 @@ int col;
 }
 
 
-int bridge_mountain_ports()
+int bridge_mountain_ports(void)
 {
 	int row, col;
 
@@ -1650,7 +1618,7 @@ int bridge_mountain_ports()
 }
 
 
-int make_roads()
+int make_roads(void)
 {
 
 	clear_province_marks();
@@ -1660,8 +1628,7 @@ int make_roads()
 }
 
 
-int print_continent(i)
-int i;
+int print_continent(int i)
 {
 	char coord[50];
 	char gates[50];
@@ -1695,7 +1662,7 @@ int i;
 }
 
 
-int count_continents()
+int count_continents(void)
 {
 	int i;
 	char *name;
@@ -1738,7 +1705,7 @@ int count_continents()
 }
 
 
-int fix_terrain_land()
+int fix_terrain_land(void)
 {
 	int row, col;
 	struct tile *p;
@@ -1765,7 +1732,7 @@ fprintf(stderr, "    assuming 'forest'\n");
 }
 
 
-int set_regions()
+int set_regions(void)
 {
 	FILE *fp;
 	char buf[LEN];
@@ -1864,9 +1831,7 @@ int set_regions()
 }
 
 
-int flood_land_inside(row, col, ins)
-int row, col;
-int ins;
+int flood_land_inside(int row, int col, int ins)
 {
 	int dir;
 	struct tile *p;
@@ -1901,9 +1866,7 @@ int ins;
 }
 
 
-int flood_water_inside(row, col, ins)
-int row, col;
-int ins;
+int flood_water_inside(int row, int col, int ins)
 {
 	int dir;
 	struct tile *p;
@@ -1939,7 +1902,7 @@ int ins;
  *  Name groups of provinces
  */
 
-int set_province_clumps()
+int set_province_clumps(void)
 {
 	FILE *fp;
 	char buf[LEN];
@@ -1996,7 +1959,7 @@ int set_province_clumps()
 }
 
 
-int unnamed_province_clumps()
+int unnamed_province_clumps(void)
 {
 	int row, col;
 	int n;
@@ -2021,9 +1984,7 @@ int unnamed_province_clumps()
 }
 
 
-int flood_land_clumps(row, col, name)
-int row, col;
-char *name;
+int flood_land_clumps(int row, int col, char *name)
 {
 	int dir;
 	struct tile *p;
@@ -2057,10 +2018,7 @@ char *name;
 
 
 
-int print_inside_sublocs(flag, row, col)
-int flag;
-int row;
-int col;
+int print_inside_sublocs(int flag, int row, int col)
 {
 	int i;
 	int count = 0;
@@ -2118,7 +2076,7 @@ int col;
 }
 
 
-int make_islands()
+int make_islands(void)
 {
 	int i;
 	int row, col;
@@ -2139,9 +2097,7 @@ int make_islands()
 }
 
 
-int island_allowed(row, col)
-int row;
-int col;
+int island_allowed(int row, int col)
 {
 	int inside;
 	char *p;
@@ -2159,11 +2115,7 @@ int col;
 }
 
 
-int create_a_subloc(row, col, hidden, kind)
-int row;
-int col;
-int hidden;
-int kind;
+int create_a_subloc(int row, int col, int hidden, int kind)
 {
 
 	top_subloc++;
@@ -2190,10 +2142,7 @@ int kind;
 }
 
 
-int create_a_building(sl, hidden, kind)
-int sl;
-int hidden;
-int kind;
+int create_a_building(int sl, int hidden, int kind)
 {
 
 	top_subloc++;
@@ -2216,7 +2165,7 @@ int kind;
 }
 
 
-int count_sublocs()
+int count_sublocs(void)
 {
 	int row, col;
 	int i;
@@ -2262,7 +2211,7 @@ int count_sublocs()
 }
 
 
-int dump_roads()
+int dump_roads(void)
 {
 	int row, col;
 	int i, j;
@@ -2309,7 +2258,7 @@ int dump_roads()
 }
 
 
-int dump_gates()
+int dump_gates(void)
 {
 	int row, col;
 	int i, j;
@@ -2351,7 +2300,7 @@ int dump_gates()
 
 
 tiles_list
-random_tile_from_each_region()
+random_tile_from_each_region(void)
 {
 	static tiles_list l = NULL;
 	int i, j;
@@ -2378,8 +2327,7 @@ random_tile_from_each_region()
 
 
 tiles_list
-shift_tour_endpoints(l)
-tiles_list l;
+shift_tour_endpoints(tiles_list l)
 {
 	static tiles_list other = NULL;
 	int i;
@@ -2431,7 +2379,7 @@ tiles_list l;
  *	12 rings of 6-12 islands	(gate_link_islands)
  */
 
-int make_gates()
+int make_gates(void)
 {
 
 	gate_province_islands(25);
@@ -2449,10 +2397,7 @@ int make_gates()
 }
 
 
-int new_gate(from, to, key)
-struct tile *from;
-struct tile *to;
-int key;
+int new_gate(struct tile *from, struct tile *to, int key)
 {
 	int gate_num;
 
@@ -2492,8 +2437,7 @@ show_gate_coverage()
 #endif
 
 
-int random_province_gates(n)
-int n;
+int random_province_gates(int n)
 {
 	int r1, c1, r2, c2;
 	int i;
@@ -2511,8 +2455,7 @@ int n;
 }
 
 
-int gate_province_islands(times)
-int times;
+int gate_province_islands(int times)
 {
 	int i, j;
 	int isle;
@@ -2534,7 +2477,7 @@ int times;
 }
 
 
-int gate_continental_tour()
+int gate_continental_tour(void)
 {
 	int i;
 	tiles_list l;
@@ -2562,8 +2505,7 @@ int gate_continental_tour()
 }
 
 
-int gate_link_islands(rings)
-int rings;
+int gate_link_islands(int rings)
 {
 	int i, j;
 	int first, next, n;
@@ -2590,8 +2532,7 @@ int rings;
 }
 
 
-int gate_land_ring(rings)
-int rings;
+int gate_land_ring(int rings)
 {
 	int i, j;
 	int r_first, c_first;
@@ -2625,10 +2566,7 @@ int rings;
 
 
 struct tile *
-choose_random_stone_circle(l, avoid1, avoid2)
-tiles_list l;
-struct tile *avoid1;
-struct tile *avoid2;
+choose_random_stone_circle(tiles_list l, struct tile *avoid1, struct tile *avoid2)
 {
 	int i;
 
@@ -2648,7 +2586,7 @@ struct tile *avoid2;
  *	chosen at random, and five gates to random provinces
  */
 
-int gate_stone_circles()
+int gate_stone_circles(void)
 {
 	tiles_list l;
 	int i, j;
@@ -2697,7 +2635,7 @@ int gate_stone_circles()
 }
 
 
-int clear_province_marks()
+int clear_province_marks(void)
 {
 	int row;
 	int col;
@@ -2709,7 +2647,7 @@ int clear_province_marks()
 }
 
 
-int clear_subloc_marks()
+int clear_subloc_marks(void)
 {
 	int i;
 
@@ -2718,7 +2656,7 @@ int clear_subloc_marks()
 }
 
 
-int mark_bad_locs()
+int mark_bad_locs(void)
 {
 	int i, j;
 
@@ -2737,9 +2675,7 @@ int mark_bad_locs()
  *  (Except for the lost city and the city of the ancients)
  */
 
-int not_random_province(row, col)		/* oh, hack upon hack ... */
-int *row;
-int *col;
+int not_random_province(int *row, int *col)		/* oh, hack upon hack ... */
 {
 	int n;
 	int r, c;
@@ -2772,9 +2708,7 @@ int *col;
 }
 
 
-int not_place_random_subloc(kind, hidden)
-int kind;
-int hidden;
+int not_place_random_subloc(int kind, int hidden)
 {
 	int row, col;
 
@@ -2783,10 +2717,7 @@ int hidden;
 }
 
 
-int random_province(row, col, terr)
-int *row;
-int *col;
-int terr;
+int random_province(int *row, int *col, int terr)
 {
 	int n;
 	int r, c;
@@ -2842,10 +2773,7 @@ int terr;
 }
 
 
-int place_random_subloc(kind, hidden, terr)
-int kind;
-int hidden;
-int terr;
+int place_random_subloc(int kind, int hidden, int terr)
 {
 	int row, col;
 
@@ -2854,7 +2782,7 @@ int terr;
 }
 
 
-int random_island()
+int random_island(void)
 {
 	int n;
 	int i;
@@ -2929,8 +2857,7 @@ struct {
 
 
 char *
-name_guild(skill)
-int skill;
+name_guild(int skill)
 {
 	int i;
 	int sum = 0;
@@ -2957,7 +2884,7 @@ int skill;
 }
 
 
-int count_cities()
+int count_cities(void)
 {
 	int i;
 	int row, col, ins;
@@ -2974,7 +2901,7 @@ int count_cities()
 }
 
 
-int count_subloc_coverage()
+int count_subloc_coverage(void)
 {
 	int row, col;
 	int i;
@@ -3067,9 +2994,7 @@ struct {
 };
 
 
-int make_appropriate_subloc(row, col)
-int row;
-int col;
+int make_appropriate_subloc(int row, int col)
 {
 	int terr;
 	int sum = 0;
@@ -3120,9 +3045,7 @@ int col;
 }
 
 
-int create_a_graveyard(row, col)
-int row;
-int col;
+int create_a_graveyard(int row, int col)
 {
 	int n;
 	char *s;
@@ -3135,7 +3058,7 @@ int col;
 }
 
 
-int make_graveyards()
+int make_graveyards(void)
 {
 	int i, j;
 	struct tile *p;
@@ -3165,11 +3088,7 @@ int make_graveyards()
 }
 
 
-int create_a_city(row, col, name, major)
-int row;
-int col;
-char *name;
-int major;
+int create_a_city(int row, int col, char *name, int major)
 {
 	int n;
 	static FILE *fp = NULL;
@@ -3199,7 +3118,7 @@ int major;
 
 
 #if 1
-int place_sublocations()
+int place_sublocations(void)
 {
 	int row, col;
 	int n;
@@ -3229,11 +3148,11 @@ int place_sublocations()
 		}
 
 		if (rnd(1,100) <= 35)
-			make_appropriate_subloc(row, col, 0);
+			make_appropriate_subloc(row, col);
 		if (rnd(1,100) <= 35)
-			make_appropriate_subloc(row, col, 0);
+			make_appropriate_subloc(row, col);
 		if (rnd(1,100) <= 35)
-			make_appropriate_subloc(row, col, 0);
+			make_appropriate_subloc(row, col);
 	}
 
 	ilist_reclaim((ilist *) &l);
@@ -3268,7 +3187,7 @@ place_sublocations()
 #endif
 
 
-int count_tiles()
+int count_tiles(void)
 {
 	int r, c;
 	int i;

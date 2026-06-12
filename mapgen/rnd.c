@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include "z.h"		/* BUGFIX (modernization): prototypes for rnd/load_seed/save_seed */
 
 /*
  *  Random number generator built on top of MD5
@@ -48,7 +49,7 @@ void xMD5Transform(word32 buf[4], word32 const in[16]);
  * Shuffle the bytes into little-endian order within words, as per the
  * MD5 spec.  Note: this code works regardless of the byte order.
  */
-void
+static void
 byteSwap(word32 *buf, unsigned words)
 {
 	byte *p = (byte *)buf;
@@ -255,7 +256,7 @@ xMD5Transform(word32 buf[4], word32 const in[16])
 }
 
 
-void MD5(void *dest, void *orig, int len)
+static void MD5(void *dest, void *orig, int len)
 {
 	struct xMD5Context context;
 
@@ -271,7 +272,7 @@ static unsigned long digest[4];
 
 #define		SEED_FILE	"randseed"
 
-void load_seed()
+void load_seed(void)
 {
 	int fd;
 
@@ -283,7 +284,7 @@ void load_seed()
 	}
 }
 
-void save_seed()
+void save_seed(void)
 {
 	int fd;
 
