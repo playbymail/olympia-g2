@@ -532,7 +532,7 @@ v_use(struct command *c)
 	c->use_ent = ent;
 	c->use_skill = sk;
 	c->use_exp = has_skill(c->who, sk);
-	c->poll = use_tbl[ent].poll;
+	c->poll = (schar) use_tbl[ent].poll;
 	c->wait = use_tbl[ent].time;
 	c->h = basis;
 
@@ -1038,7 +1038,7 @@ set_skill(int who, int skill, int know)
 
 	p = p_skill_ent(who, skill);
 
-	p->know = know;
+	p->know = (char) know;
 }
 
 

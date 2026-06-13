@@ -613,7 +613,7 @@ v_format(struct command *c)
 
 	pl = player(c->who);
 
-	p_player(pl)->format = c->a;
+	p_player(pl)->format = (schar) c->a;
 
 	wout(c->who, "Formatting for %s set to %d.", box_name(pl), c->a);
 
@@ -628,7 +628,7 @@ v_notab(struct command *c)
 
 	pl = player(c->who);
 
-	p_player(pl)->notab = c->a;
+	p_player(pl)->notab = (schar) c->a;
 
 	if (c->a)
 		wout(c->who, "No TAB characters will appear in turn reports.");
