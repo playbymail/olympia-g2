@@ -210,7 +210,7 @@ rename_act_join_files(void)
 	for (i = 0; i < ilist_len(new_players); i++)
 	{
 		pl = new_players[i];
-		sprintf(acct, box_code_less(pl));
+		sprintf(acct, "%s", box_code_less(pl));
 
 		old_name = sout("%s/%s/Join-g2", acct_dir, acct);
 		new_name = sout("%s/%s/Join-g2-", acct_dir, acct);
