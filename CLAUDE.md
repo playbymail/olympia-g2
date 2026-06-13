@@ -81,10 +81,10 @@ Scripts auto-detect the repo root and look for binaries at
   must be deliberate and the snapshot updated in the same change with a note on
   why. Modernization changes (prototypes, casts, dead-code removal) must produce
   byte-identical golden output.
-- Build config lives in `CMakeLists.txt`. The shared warning set is applied to
-  both targets via the `olympia_compile_flags()` helper (issue #14); per-target
-  additions — optimization level (`-O1`/`-Og`) and the olympia-only
-  `-Wformat -Werror=format` — sit at the call site, and sanitizers come via
+- Build config lives in `CMakeLists.txt`. The shared warning set — including
+  `-Wformat -Werror=format`, enforced project-wide — is applied to both targets
+  via the `olympia_compile_flags()` helper (issue #14). Optimization is owned by
+  the build type / preset (not pinned per target), and sanitizers come via
   `olympia_enable_sanitizers()`. The old `phase_N_build_flags()` /
   `legacy_build_flags()` scaffolding and the `LEGACY_C_FLAGS` / `…_STRICT`
   variables were retired in #14 (deleted outright — recover from git history if
@@ -500,12 +500,8 @@ strictly separate from the source change):
 - **Consolidated the flags.** The Phase 1–8 + Clang-guarded `-W.../-Werror=...`
   pairs were previously **inlined** into both `target_compile_options` blocks.
   They now live in a single `olympia_compile_flags(tgt)` helper applied
-  identically to both targets (mirrors G1's `olympia_compile_flags`). Per-target
-  bits stay at the call site: the optimization level (`-O1` mapgen / `-Og`
-  olympia) and the **olympia-only** `-Wformat -Werror=format` (the engine prints
-  player-facing text and the non-literal-format sites were fixed in #6, so the
-  full format class is an error with no sub-suppression; mapgen never carried
-  it). Behavior-neutral: the only effective flag-stream delta (verified against
+  identically to both targets (mirrors G1's `olympia_compile_flags`).
+  Behavior-neutral: the only effective flag-stream delta (verified against
   `compile_commands.json` per target) was dropping four **dead** `-Wno-` entries
   — `incompatible-pointer-types`, `int-conversion`, `int-to-pointer-cast`,
   `pointer-to-int-cast` — each already overridden by the later `-Werror=` for the
@@ -524,8 +520,24 @@ strictly separate from the source change):
   golden-critical MD5 stayed on real libc `bzero`/`bcopy` (from `<strings.h>`).
   With the dead branch gone, the macros provably never apply anywhere. Mirrors
   G1 `#15` (G2 has **no `USE_OUR_RND`**, so only the `SYSV` half applied).
+- **Optimization owned by the build type (not pinned per target).** The targets
+  pinned `-O1 -g` (mapgen) / `-Og -g` (olympia) in `target_compile_options`.
+  Because target options are appended *after* the build-type flags
+  (`CMAKE_C_FLAGS_<CONFIG>`), the pinned `-O` clobbered the preset's choice —
+  `release` emitted `-O3 -DNDEBUG` and was then silently overridden back to
+  `-Og`/`-O1`, so it never actually built optimized (verified via
+  `compile_commands.json`). Removed the pinned `-O`/`-g`; the build type now owns
+  it: debug → `-O0 -g`, release → `-O3 -DNDEBUG`, asan-ubsan → `-O1 -g …` (its
+  preset override). Mirrors `../olympia-g1@b149508`. Golden-neutral — the engine
+  output is deterministic across `-O` levels.
+- **Format checking unified project-wide.** `-Wformat -Werror=format` was
+  olympia-only; mapgen builds clean under it, so it moved into the shared
+  `olympia_compile_flags()` helper and now applies to **both** targets. The full
+  class (incl. format-security / format-nonliteral) is an error with no
+  sub-suppression (the non-literal sites were fixed in #6). No per-target warning
+  difference remains.
 
-Both commits: golden gate `YES` on debug and asan-ubsan, byte-identical,
+Every #14 commit: golden gate `YES` on debug and asan-ubsan, byte-identical,
 asan/ubsan clean.
 
 ## Warning policy
@@ -538,7 +550,7 @@ in `CMakeLists.txt`; this section is the rationale.
 **Three tiers:**
 
 1. **Enforced (`-Werror`).** Every class on the Phase 1–8 ladder, plus the
-   olympia-only format class (#5/#6) and the `implicit-int-conversion`
+   project-wide format class (#5/#6) and the `implicit-int-conversion`
    code-quality class (#13). Each was driven to **zero** across the tree and
    locked. These are written as an explicit `-Wfoo -Werror=foo` pair, one class
    per line — the bare `-Wfoo` is redundant (the `-Werror=` already enables it)

@@ -27,11 +27,10 @@ set(CMAKE_C_EXTENSIONS OFF)
 #
 # The shared set is applied identically to every target via
 # olympia_compile_flags(), with optional sanitizers via
-# olympia_enable_sanitizers(). The ONLY per-target warning difference is the
-# format class: -Wformat -Werror=format is enforced on olympia-g2 only (the
-# engine prints player-facing text and the non-literal-format sites were fixed
-# in issue #6, so the full class is an error with no sub-suppression). mapgen-g2
-# emits no player-facing formatted output and does not carry it.
+# olympia_enable_sanitizers(). -Wformat -Werror=format is enforced project-wide
+# on both targets: the full format class is an error, no sub-suppression (the
+# non-literal-format sites were fixed in issue #6). There is no per-target
+# warning difference.
 #
 # Optimization level is owned by the build type / preset (debug -> default -O0
 # -g, release -> -O3 -DNDEBUG, asan-ubsan -> -O1 -g ... via its preset override),
@@ -44,8 +43,7 @@ option(OLYMPIA_SANITIZE "Enable sanitizer instrumentation" OFF)
 set(OLYMPIA_SANITIZERS "address,undefined" CACHE STRING "Comma-separated sanitizers, e.g. address,undefined")
 
 # All shared engine warning flags, applied identically to every target.
-# The olympia-only -Wformat lives at its call site; optimization is owned by the
-# build type / preset (see the conventions block above).
+# Optimization is owned by the build type / preset (see the conventions block).
 function(olympia_compile_flags tgt)
     target_compile_options(${tgt} PRIVATE
         # --- Suppressions: legacy idioms left as-is ---
@@ -61,6 +59,11 @@ function(olympia_compile_flags tgt)
         -Wno-non-literal-null-conversion
         -Wno-parentheses
         -Wno-tautological-constant-out-of-range-compare
+
+        # --- Format/vararg checking enforced (issues #5/#6) ---
+        # The full class incl. format-security / format-nonliteral is an error;
+        # the non-literal sites were fixed in #6, so no sub-suppression.
+        -Wformat -Werror=format
 
         # --- Modernization classes triaged to 0 and locked (CLAUDE.md) ---
         -Wint-to-pointer-cast -Werror=int-to-pointer-cast                # Phase 1
@@ -209,9 +212,6 @@ target_include_directories(olympia-g2 PRIVATE olympia/ lib/)
 # Require C11 at the target level (project-level CMAKE_C_STANDARD remains the
 # default for future targets). See issue #4.
 target_compile_features(olympia-g2 PRIVATE c_std_11)
-# -Wformat -Werror=format is olympia-only (see the conventions block at the top):
-# the full format class is an error here, no sub-suppression, after issue #6.
-target_compile_options(olympia-g2 PRIVATE -Wformat -Werror=format)
 olympia_compile_flags(olympia-g2)
 
 # Optional ASan/UBSan via the asan-ubsan preset (OLYMPIA_SANITIZE=ON).
