@@ -31,16 +31,21 @@ set(CMAKE_C_EXTENSIONS OFF)
 # format class: -Wformat -Werror=format is enforced on olympia-g2 only (the
 # engine prints player-facing text and the non-literal-format sites were fixed
 # in issue #6, so the full class is an error with no sub-suppression). mapgen-g2
-# emits no player-facing formatted output and does not carry it. Optimization
-# level (-O1 / -Og) is likewise a per-target, call-site addition.
+# emits no player-facing formatted output and does not carry it.
+#
+# Optimization level is owned by the build type / preset (debug -> default -O0
+# -g, release -> -O3 -DNDEBUG, asan-ubsan -> -O1 -g ... via its preset override),
+# NOT pinned per target. A hardcoded target -O used to be appended after the
+# build-type flags and clobber the preset's choice (release silently built at
+# -Og/-O1, never -O3); removed in issue #14 (mirrors ../olympia-g1@b149508).
 # =============================================================================
 
 option(OLYMPIA_SANITIZE "Enable sanitizer instrumentation" OFF)
 set(OLYMPIA_SANITIZERS "address,undefined" CACHE STRING "Comma-separated sanitizers, e.g. address,undefined")
 
 # All shared engine warning flags, applied identically to every target.
-# Per-target additions (optimization level, olympia-only -Wformat) live at the
-# call site.
+# The olympia-only -Wformat lives at its call site; optimization is owned by the
+# build type / preset (see the conventions block above).
 function(olympia_compile_flags tgt)
     target_compile_options(${tgt} PRIVATE
         # --- Suppressions: legacy idioms left as-is ---
@@ -161,7 +166,6 @@ target_include_directories(mapgen-g2 PRIVATE mapgen/ lib/)
 # Require C11 at the target level (project-level CMAKE_C_STANDARD remains the
 # default for future targets). See issue #4.
 target_compile_features(mapgen-g2 PRIVATE c_std_11)
-target_compile_options(mapgen-g2 PRIVATE -O1 -g)
 olympia_compile_flags(mapgen-g2)
 
 # ------------------------------------------------------------------------------
@@ -207,7 +211,7 @@ target_include_directories(olympia-g2 PRIVATE olympia/ lib/)
 target_compile_features(olympia-g2 PRIVATE c_std_11)
 # -Wformat -Werror=format is olympia-only (see the conventions block at the top):
 # the full format class is an error here, no sub-suppression, after issue #6.
-target_compile_options(olympia-g2 PRIVATE -Og -g -Wformat -Werror=format)
+target_compile_options(olympia-g2 PRIVATE -Wformat -Werror=format)
 olympia_compile_flags(olympia-g2)
 
 # Optional ASan/UBSan via the asan-ubsan preset (OLYMPIA_SANITIZE=ON).
