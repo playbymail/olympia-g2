@@ -87,9 +87,7 @@ function(phase_5_build_flags tgt)
 endfunction()
 
 option(OLYMPIA_SANITIZE "Enable sanitizer instrumentation" OFF)
-set(OLYMPIA_SANITIZERS "" CACHE STRING "Comma-separated sanitizers, e.g. address,undefined"
-    address,undefined
-)
+set(OLYMPIA_SANITIZERS "address,undefined" CACHE STRING "Comma-separated sanitizers, e.g. address,undefined")
 
 function(olympia_enable_sanitizers tgt)
     if(NOT OLYMPIA_SANITIZE)
@@ -211,6 +209,8 @@ target_compile_options(mapgen-g2 PRIVATE
     -Wmissing-prototypes -Werror=missing-prototypes
     -Wstrict-prototypes -Werror=strict-prototypes
     -Wimplicit-function-declaration -Werror=implicit-function-declaration
+    # Phase 5 - lock down remaining declarations (issue #9)
+    -Wmissing-declarations -Werror=missing-declarations
 )
 
 # ------------------------------------------------------------------------------
@@ -267,6 +267,8 @@ target_compile_options(olympia-g2 PRIVATE
     -Wmissing-prototypes -Werror=missing-prototypes
     -Wstrict-prototypes -Werror=strict-prototypes
     -Wimplicit-function-declaration -Werror=implicit-function-declaration
+    # Phase 5 - lock down remaining declarations (issue #9)
+    -Wmissing-declarations -Werror=missing-declarations
     # Format/vararg lockdown (issue #5) + non-literal-format hardening (issue #6):
     # the whole format-string class is a compile error, including the
     # format-security / format-nonliteral ("potentially insecure") sites — the 5

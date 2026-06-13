@@ -54,8 +54,9 @@ Scripts auto-detect the repo root and look for binaries at
 > `getopt()` runs, since getopt only handles single-char options. `run/olympia-g2.sh`
 > passes it on the turn run. It affects **only** the newsletter date — all other
 > output is byte-identical with or without it — and normal play (no flag) still
-> prints the real date. Ported from `../olympia-g3`. The separate `fact/100`
-> `st -32` flicker is unrelated and remains an open Phase 5 item.
+> prints the real date. Ported from `../olympia-g3`. (The separate `fact/100`
+> `st -32` flicker — once an open Phase 5 item — was root-caused and fixed in
+> issue #9; see [Phase 5](#phase-5--lock-down--done).)
 
 ## Layout
 
@@ -101,13 +102,15 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 3 | `int-conversion` | ✅ enforced |
 | 3.5 | **Remove dead/unused source files** | ✅ done |
 | 4 | `strict-prototypes`, `missing-prototypes`, `implicit-function-declaration` | ✅ enforced (`-Werror`) |
-| 5 | `missing-declarations` + sanitizers in CI | ⬜ wired (asan preset), not enforced (next) |
+| 5 | `missing-declarations` + asan/ubsan verified against the golden flow | ✅ enforced (`-Werror`); flicker fixed |
 
-Phases 1–4 are complete and locked in — the dangerous 32→64-bit pointer/int
+Phases 1–5 are complete and locked in — the dangerous 32→64-bit pointer/int
 hazards (bad casts, int/pointer conversions, and implicitly-declared functions
 whose `int` return truncates a pointer) build clean as errors, the dead source
-files are gone, and every function now has a real prototype. The remaining work
-is Phase 5 (`missing-declarations` + sanitizers in CI).
+files are gone, every function now has a real prototype and declaration, and the
+`asan-ubsan` preset builds + runs the golden flow clean. The remaining 64-bit
+work is the later ladder (issues #10–#14: `shorten-64-to-32`, `sign-conversion`,
+`return-type`, `implicit-int-conversion`, flag consolidation).
 
 > **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
 > and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
@@ -150,17 +153,14 @@ the retirements in sibling `../olympia-g1` (commit dee82d8) and `../olympia-g3`
 (issue 2). Recover from git history if a future caller ever wants it. (`ilist`,
 which stores `int`, correctly stays.)
 
-Verified clean rebuild and `./tests/olympia/golden_check.sh` → `YES`. **Caveat:**
-G2 has a pre-existing build-to-build non-determinism — a single `st -32` line in
-`fact/100` flickers across clean rebuilds of *byte-identical* source (proven by
-rebuilding the unmodified tree twice and observing the same flicker), so it is
-not caused by this change. **Update (Phase 4 done): the flicker is NOT a
-missing-prototype bug.** Re-checked after Phase 4 with all three warning classes
-at 0 and `-Werror` enforced — 6 clean rebuilds, 5 with no `st -32` line and 1
-with it — so prototypes were not the cause. `golden_check.sh` still holds
-`fact/100` out of its hash manifest and tolerates only the lone `st -32` flicker
-(reporting it), failing on any other diff. Next probe: the `asan-ubsan` preset
-(uninitialized read / UB is the new leading suspect) — see Phase 5.
+Verified clean rebuild and `./tests/olympia/golden_check.sh` → `YES`. **Historical
+caveat (now resolved):** G2 had a pre-existing build-to-build non-determinism — a
+single `st -32` line in `fact/100` flickered across clean rebuilds of
+*byte-identical* source. Phase 4 ruled out missing prototypes; **Phase 5
+(issue #9) root-caused and fixed it** — an uninitialized-value read, not a
+prototype bug. `fact/100` is now a normal manifest entry (`st 1`, deterministic);
+the `golden_check.sh` special case is gone. See
+[Phase 5](#phase-5--lock-down--done).
 
 ### Phase 4 — Prototypes & declarations ✅ done
 
@@ -220,10 +220,42 @@ helper scripts in `doc/phase4-tools/`):
   uses file-private `SZ`/`MAX_LEVELS` macros, so it can't go in `proto.h`) a
   local prototype, kept non-static to avoid an unused-function warning.
 
-### Phase 5 — Lock down (next)
+### Phase 5 — Lock down ✅ done
 
-Enable `-Werror=missing-declarations` and wire the `asan-ubsan` preset into CI
-so sanitizers run against the golden flow. **Also use the sanitizer run to chase
-the `st -32` flicker** — Phase 4 ruled out missing prototypes, and an
-uninitialized read / UB is the new leading suspect (see the Phase 3.5 caveat
-above and the `st-32` memory note).
+`-Wmissing-declarations -Werror=missing-declarations` is now inlined into both
+targets' `target_compile_options` blocks. It measures **0** hits (Phase 4's
+prototype work already covered the function-declaration class on clang; the flag
+is a cross-compiler guard — on GCC it's a distinct check). Debug and asan-ubsan
+build clean; golden gate `YES` on both.
+
+**The `asan-ubsan` preset actually works now.** Its `OLYMPIA_SANITIZERS` cache
+variable was declared with a malformed `set(... CACHE STRING "<doc>"
+address,undefined)` — the stray trailing token broke CMake's `CACHE` keyword
+recognition, so the whole thing parsed as a *normal* (directory-scope) `set` with
+a list value that shadowed the preset's cache value and leaked `CACHE STRING …`
+literals onto the compiler command line (every TU failed `no such file or
+directory: 'CACHE'`). Fixed to the proper one-line form
+`set(OLYMPIA_SANITIZERS "address,undefined" CACHE STRING "…")`. The preset now
+builds and runs the full golden flow with **no** ASan/UBSan diagnostics.
+
+**The `st -32` flicker is fixed (root cause found).** Running the golden flow
+under the sanitizers surfaced a *different* garbage value (`st 80`) in the same
+`fact/100` slot — the tell of an uninitialized read (ASan can't flag uninit
+reads directly, but the build-to-build value variation is conclusive). Traced to
+`olympia/use.c:i_use()`: when an interruptible use-skill command whose `use_tbl`
+entry has **no** interrupt handler (e.g. `sk_make_catapult`, the "Scrying One"
+NPC's `use 613`) is interrupted, `i_use` fell off the end **without a return**,
+so `interrupt_order()`'s `c->status = (*interrupt)(c)` assigned an uninitialized
+register value. That value (varying per build: `-32`, `80`, or absent because
+`print_command` only emits `st` when `status != 0`) then persisted into the
+requeued command (`oly_parse` doesn't reset `status`) and got saved. Fix: `i_use`
+returns `TRUE` when there's no inner interrupt handler — matching G1's `i_use`
+(which already had the `return TRUE`). `status` is now a deterministic `st 1`;
+**5 clean rebuilds confirm stability.** `fact/100` is folded back into the hash
+manifest and the `golden_check.sh` flicker special case (plus the
+`fact-100.reference`) is deleted.
+
+> **CI:** issue #9 also called for wiring the `asan-ubsan` flow into CI, but the
+> maintainer decided against adding CI workflows to this repo (2026-06-13). The
+> sanitizer gate is run locally via `OLYMPIA_PRESET=asan-ubsan` + the golden
+> scripts (see [Test](#test--golden-snapshots-must-stay-green)).

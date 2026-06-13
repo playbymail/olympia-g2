@@ -696,6 +696,7 @@ i_use(struct command *c)
 
 	if (use_tbl[ent].interrupt != NULL)
 		return (*use_tbl[ent].interrupt)(c);
+	return TRUE;
 }
 
 
