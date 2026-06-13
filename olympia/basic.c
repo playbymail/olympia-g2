@@ -38,6 +38,7 @@ hinder_med_chance(int who)
 	default:
 		assert(FALSE);
 	}
+	return 0;
 }
 
 

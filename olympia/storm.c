@@ -204,6 +204,7 @@ new_storm(int new, int sk, int aura, int where)
 	}
 
 	show_to_garrison = FALSE;
+	return new;
 }
 
 
@@ -1098,6 +1099,7 @@ fog_excuse(void)
 	default:
 		assert(FALSE);
 	}
+	return "";
 }
 
 

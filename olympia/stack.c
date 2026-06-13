@@ -46,6 +46,7 @@ here_precedes(int a, int b)
 			return FALSE;
 
 	assert(FALSE);
+	return FALSE;
 }
 
 
@@ -627,7 +628,7 @@ has_prisoner(int who, int pris)
 }
 
 
-int
+void
 move_prisoner(int who, int target, int pris)
 {
 	int rs = release_swear(pris);
@@ -817,6 +818,7 @@ promote_after(int a, int b)
 		return FALSE;
 
 	assert(FALSE);
+	return FALSE;
 }
 
 

@@ -411,6 +411,7 @@ choose_quest_monster(int where)
 		}
 
 	assert(FALSE);
+	return 0;
 }
 
 

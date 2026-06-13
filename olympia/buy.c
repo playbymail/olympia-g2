@@ -194,6 +194,7 @@ reduce_qty(struct trade *t, int cost)
 	}
 
 	assert(FALSE);
+	return 0;
 }
 
 

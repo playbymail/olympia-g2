@@ -287,7 +287,7 @@ fill_out_level(int map[SZ+2][SZ+2][MAX_LEVELS], int l)
 }
 
 
-static int
+static void
 add_chamber(int map[SZ+2][SZ+2][MAX_LEVELS], int l)
 {
 	int r, c;

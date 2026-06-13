@@ -712,6 +712,7 @@ mage_menial_how(void)
 	default:
 		assert(FALSE);
 	}
+	return "";
 }
 
 
