@@ -217,6 +217,9 @@ target_sources(mapgen-g2 PRIVATE
         lib/lists.h
 )
 target_include_directories(mapgen-g2 PRIVATE mapgen/ lib/)
+# Require C11 at the target level (project-level CMAKE_C_STANDARD remains the
+# default for future targets). See issue #4.
+target_compile_features(mapgen-g2 PRIVATE c_std_11)
 target_compile_options(mapgen-g2 PRIVATE
     ${LEGACY_C_FLAGS} -O1 -g
     -Wint-conversion -Werror=int-conversion
@@ -267,6 +270,9 @@ target_sources(olympia-g2 PRIVATE
         lib/lists.h lib/checked_alloc.h
 )
 target_include_directories(olympia-g2 PRIVATE olympia/ lib/)
+# Require C11 at the target level (project-level CMAKE_C_STANDARD remains the
+# default for future targets). See issue #4.
+target_compile_features(olympia-g2 PRIVATE c_std_11)
 target_compile_options(olympia-g2 PRIVATE
     ${LEGACY_C_FLAGS} -Og -g
     # Phase 1 - list triage - only pointer-cast errors
