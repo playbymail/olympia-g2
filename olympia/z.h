@@ -27,10 +27,14 @@
 
 #define		LEN		2048	/* generic string max length */
 
-#ifdef SYSV
-#define bzero(a,n)		memset(a, '\0', n)
-#define bcopy(a,b,n)		memcpy(b, a, n)
-#endif
+/*
+ *  BUGFIX (modernization): the dead `#ifdef SYSV` bzero/bcopy shadow macros
+ *  were removed (issue #14). SYSV is never defined anywhere in the tree, so
+ *  the macros never expanded; bzero/bcopy come from <strings.h> (included at
+ *  the top of this header). This also makes the Phase-4 invariant explicit:
+ *  the golden-critical MD5 in rnd.c uses the real libc bzero/bcopy, never a
+ *  shadow macro.
+ */
 
 #define	abs(n)		((n) < 0 ? ((n) * -1) : (n))
 

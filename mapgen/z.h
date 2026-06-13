@@ -16,11 +16,11 @@
 
 #define		LEN		512	/* generic string max length */
 
-/* BUGFIX (modernization): macros conflict with stdlib */
-//#ifdef SYSV
-//#define bzero(a,n)		memset(a, '\0', n)
-//#define bcopy(a,b,n)		memcpy(b, a, n)
-//#endif
+/*
+ *  BUGFIX (modernization): the dead `#ifdef SYSV` bzero/bcopy shadow macros
+ *  were removed (issue #14) -- SYSV is never defined, and bzero/bcopy come
+ *  from <strings.h> included above. (They were already commented out here.)
+ */
 
 #define	abs(n)		((n) < 0 ? ((n) * -1) : (n))
 
