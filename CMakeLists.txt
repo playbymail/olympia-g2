@@ -228,9 +228,15 @@ target_compile_options(mapgen-g2 PRIVATE
     -Wreturn-mismatch -Werror=return-mismatch
 )
 # -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
+# -Wimplicit-int-conversion (issue #13) is likewise Clang-only — GCC folds it
+# into the broader -Wconversion. This is a code-quality / tech-debt class
+# (int->short/char narrowing into entity fields), NOT a 64-bit hazard:
+# arch-independent, identical on ILP32 and LP64. Driven to zero with explicit
+# (short)/(schar)/(char) casts; representation-preserving (golden byte-identical).
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_compile_options(mapgen-g2 PRIVATE
         -Wshorten-64-to-32 -Werror=shorten-64-to-32
+        -Wimplicit-int-conversion -Werror=implicit-int-conversion
     )
 endif ()
 
@@ -311,9 +317,15 @@ target_compile_options(olympia-g2 PRIVATE
     -Wreturn-mismatch -Werror=return-mismatch
 )
 # -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
+# -Wimplicit-int-conversion (issue #13) is likewise Clang-only — GCC folds it
+# into the broader -Wconversion. This is a code-quality / tech-debt class
+# (int->short/char narrowing into entity fields), NOT a 64-bit hazard:
+# arch-independent, identical on ILP32 and LP64. Driven to zero with explicit
+# (short)/(schar)/(char) casts; representation-preserving (golden byte-identical).
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_compile_options(olympia-g2 PRIVATE
         -Wshorten-64-to-32 -Werror=shorten-64-to-32
+        -Wimplicit-int-conversion -Werror=implicit-int-conversion
     )
 endif ()
 
