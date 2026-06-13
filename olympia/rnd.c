@@ -324,6 +324,6 @@ int md5_int(int a, int b, int c, int d)
 
 	MD5(buf, buf, sizeof(buf));
 
-	return buf[0];
+	return (int) buf[0];	/* low 32 bits of the MD5 word (was 32-bit ulong on ILP32) */
 }
 
