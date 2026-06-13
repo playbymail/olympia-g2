@@ -88,6 +88,13 @@ Scripts auto-detect the repo root and look for binaries at
   applied via the `phase_N_build_flags()` functions — those are roadmap
   scaffolding (defined, not yet called). `LEGACY_C_FLAGS_STRICT` is likewise
   staged but unused.
+- **C11 standard** is set both project-wide (`CMAKE_C_STANDARD 11` /
+  `…_REQUIRED ON` / `CMAKE_C_EXTENSIONS OFF`, lines 4–6) *and* declared
+  explicitly per target via `target_compile_features(<tgt> PRIVATE c_std_11)`
+  (issue #4, merged in #7). The per-target call is documentation/intent only —
+  inert because the global standard already forces `-std=c11`; it guards against
+  divergence if new targets are added. Mirrors the same change in sibling
+  `../olympia-g1`. Not part of the 64-bit modernization effort.
 
 ## Modernization status
 
