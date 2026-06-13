@@ -1959,7 +1959,7 @@ void set_province_clumps(void)
 }
 
 
-int unnamed_province_clumps(void)
+void unnamed_province_clumps(void)
 {
 	int row, col;
 	int n;
@@ -2018,7 +2018,7 @@ int flood_land_clumps(int row, int col, char *name)
 
 
 
-int print_inside_sublocs(int flag, int row, int col)
+void print_inside_sublocs(int flag, int row, int col)
 {
 	int i;
 	int count = 0;
@@ -2076,7 +2076,7 @@ int print_inside_sublocs(int flag, int row, int col)
 }
 
 
-int make_islands(void)
+void make_islands(void)
 {
 	int i;
 	int row, col;
@@ -2165,7 +2165,7 @@ int create_a_building(int sl, int hidden, int kind)
 }
 
 
-int count_sublocs(void)
+void count_sublocs(void)
 {
 	int row, col;
 	int i;
@@ -2211,7 +2211,7 @@ int count_sublocs(void)
 }
 
 
-int dump_roads(void)
+void dump_roads(void)
 {
 	int row, col;
 	int i, j;
@@ -2258,7 +2258,7 @@ int dump_roads(void)
 }
 
 
-int dump_gates(void)
+void dump_gates(void)
 {
 	int row, col;
 	int i, j;
@@ -2379,7 +2379,7 @@ shift_tour_endpoints(tiles_list l)
  *	12 rings of 6-12 islands	(gate_link_islands)
  */
 
-int make_gates(void)
+void make_gates(void)
 {
 
 	gate_province_islands(25);
@@ -2397,7 +2397,7 @@ int make_gates(void)
 }
 
 
-int new_gate(struct tile *from, struct tile *to, int key)
+void new_gate(struct tile *from, struct tile *to, int key)
 {
 	int gate_num;
 
@@ -2437,7 +2437,7 @@ show_gate_coverage()
 #endif
 
 
-int random_province_gates(int n)
+void random_province_gates(int n)
 {
 	int r1, c1, r2, c2;
 	int i;
@@ -2455,7 +2455,7 @@ int random_province_gates(int n)
 }
 
 
-int gate_province_islands(int times)
+void gate_province_islands(int times)
 {
 	int i, j;
 	int isle;
@@ -2477,7 +2477,7 @@ int gate_province_islands(int times)
 }
 
 
-int gate_continental_tour(void)
+void gate_continental_tour(void)
 {
 	int i;
 	tiles_list l;
@@ -2505,7 +2505,7 @@ int gate_continental_tour(void)
 }
 
 
-int gate_link_islands(int rings)
+void gate_link_islands(int rings)
 {
 	int i, j;
 	int first, next, n;
@@ -2532,7 +2532,7 @@ int gate_link_islands(int rings)
 }
 
 
-int gate_land_ring(int rings)
+void gate_land_ring(int rings)
 {
 	int i, j;
 	int r_first, c_first;
@@ -2586,7 +2586,7 @@ choose_random_stone_circle(tiles_list l, struct tile *avoid1, struct tile *avoid
  *	chosen at random, and five gates to random provinces
  */
 
-int gate_stone_circles(void)
+void gate_stone_circles(void)
 {
 	tiles_list l;
 	int i, j;
@@ -2635,7 +2635,7 @@ int gate_stone_circles(void)
 }
 
 
-int clear_province_marks(void)
+void clear_province_marks(void)
 {
 	int row;
 	int col;
@@ -2647,7 +2647,7 @@ int clear_province_marks(void)
 }
 
 
-int clear_subloc_marks(void)
+void clear_subloc_marks(void)
 {
 	int i;
 
@@ -2656,7 +2656,7 @@ int clear_subloc_marks(void)
 }
 
 
-int mark_bad_locs(void)
+void mark_bad_locs(void)
 {
 	int i, j;
 
@@ -2881,10 +2881,11 @@ name_guild(int skill)
 		}
 
 	assert(FALSE);
+	return "";
 }
 
 
-int count_cities(void)
+void count_cities(void)
 {
 	int i;
 	int row, col, ins;
@@ -2901,7 +2902,7 @@ int count_cities(void)
 }
 
 
-int count_subloc_coverage(void)
+void count_subloc_coverage(void)
 {
 	int row, col;
 	int i;
@@ -3045,7 +3046,7 @@ void make_appropriate_subloc(int row, int col)
 }
 
 
-int create_a_graveyard(int row, int col)
+void create_a_graveyard(int row, int col)
 {
 	int n;
 	char *s;
@@ -3058,7 +3059,7 @@ int create_a_graveyard(int row, int col)
 }
 
 
-int make_graveyards(void)
+void make_graveyards(void)
 {
 	int i, j;
 	struct tile *p;
@@ -3118,7 +3119,7 @@ int create_a_city(int row, int col, char *name, int major)
 
 
 #if 1
-int place_sublocations(void)
+void place_sublocations(void)
 {
 	int row, col;
 	int n;
@@ -3187,7 +3188,7 @@ place_sublocations()
 #endif
 
 
-int count_tiles(void)
+void count_tiles(void)
 {
 	int r, c;
 	int i;

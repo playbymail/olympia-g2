@@ -149,8 +149,10 @@ set(LEGACY_C_FLAGS
         -Wno-non-literal-null-conversion
         -Wno-parentheses
         -Wno-pointer-to-int-cast
-        -Wno-return-mismatch
-        -Wno-return-type
+        # return-type / return-mismatch are now enforced per-target (issue #12,
+        # Phase 8) — every non-void function that fell off the end (a garbage
+        # register read, 8 bytes on LP64) was given a real return or retyped to
+        # void; promoted to -Werror below.
         # sizeof-pointer-memaccess is now enforced per-target (issue #10,
         # Phase 6) — the MD5 bzero(ctx, sizeof(ctx)) bug fixed, promoted to
         # -Werror below.
@@ -219,6 +221,11 @@ target_compile_options(mapgen-g2 PRIVATE
     # Phase 7 (issue #11): signed/unsigned implicit conversions. Arch-independent
     # but a large class — qsort nmemb counts, the loop_known macro, MD5 RNG mixes.
     -Wsign-conversion -Werror=sign-conversion
+    # Phase 8 (issue #12): a non-void function falling off the end (or hitting a
+    # bare `return;`) leaves the caller reading a garbage register — 8 bytes on
+    # LP64. Not Clang-only. The 27 mapgen helpers were retyped to void.
+    -Wreturn-type -Werror=return-type
+    -Wreturn-mismatch -Werror=return-mismatch
 )
 # -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -295,6 +302,13 @@ target_compile_options(olympia-g2 PRIVATE
     # Phase 7 (issue #11): signed/unsigned implicit conversions. Arch-independent
     # but a large class — qsort nmemb counts, the loop_known macro, MD5 RNG mixes.
     -Wsign-conversion -Werror=sign-conversion
+    # Phase 8 (issue #12): a non-void function falling off the end (or hitting a
+    # bare `return;`) leaves the caller reading a garbage register — 8 bytes on
+    # LP64. This is the class that caused the fact/100 "st -32" flicker (#9) via
+    # i_use(). Not Clang-only. Missing returns added / void-converted across the
+    # engine + main.c writers; queue() resolved.
+    -Wreturn-type -Werror=return-type
+    -Wreturn-mismatch -Werror=return-mismatch
 )
 # -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")

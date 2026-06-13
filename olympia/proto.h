@@ -395,18 +395,18 @@ extern void show_lore_sheets(void);
 
 /* olympia/main.c */
 extern void call_init_routines(void);
-extern int copy_public_turns(void);
-extern int mail_reports(void);
-extern int output_html_rep(int pl);
+extern void copy_public_turns(void);
+extern void mail_reports(void);
+extern void output_html_rep(int pl);
 extern int send_rep(int pl, int turn);
 extern void set_html_pass(int pl);
-extern int setup_html_all(void);
+extern void setup_html_all(void);
 extern void setup_html_dir(int pl);
 extern int v_remail(struct command *c);
 extern void write_email(void);
-extern int write_faction_sup(int who_for, int target, FILE *fp);
+extern void write_faction_sup(int who_for, int target, FILE *fp);
 extern void write_factions(void);
-extern int write_forward_sup(int who_for, int target, FILE *fp);
+extern void write_forward_sup(int who_for, int target, FILE *fp);
 extern void write_forwards(void);
 extern void write_player_list(void);
 extern void write_totimes(void);

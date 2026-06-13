@@ -415,7 +415,7 @@ void write_player_list(void)
 }
 
 
-int write_forward_sup(int who_for, int target, FILE *fp)
+void write_forward_sup(int who_for, int target, FILE *fp)
 {
 	int pl;
 	char *s, *u;
@@ -474,7 +474,7 @@ void write_forwards(void)
 }
 
 
-int write_faction_sup(int who_for, int target, FILE *fp)
+void write_faction_sup(int who_for, int target, FILE *fp)
 {
 	int pl;
 	char *s, *u;
@@ -619,7 +619,7 @@ send_rep(int pl, int turn)
 }
 
 
-int mail_reports(void)
+void mail_reports(void)
 {
 	int pl;
 
@@ -640,7 +640,7 @@ v_remail(struct command *c)
 	return TRUE;
 }
 
-int setup_html_all(void)
+void setup_html_all(void)
 {
 	int pl;
 
@@ -708,7 +708,7 @@ void set_html_pass(int pl)
 	system(buf);
 }
 
-int output_html_rep(int pl)
+void output_html_rep(int pl)
 {
 	char fnam[LEN];
 	char fnam2[LEN];
@@ -725,7 +725,7 @@ int output_html_rep(int pl)
 	system(fnam2);
 }
 
-int copy_public_turns(void)
+void copy_public_turns(void)
 {
 	char fnam[LEN];
 	char cmd[LEN];

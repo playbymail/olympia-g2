@@ -110,16 +110,18 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 5 | `missing-declarations` + asan/ubsan verified against the golden flow | ✅ enforced (`-Werror`); flicker fixed |
 | 6 | `shorten-64-to-32` (Clang-guarded) + `sizeof-pointer-memaccess` | ✅ enforced (`-Werror`); MD5 `bzero` bug fixed |
 | 7 | `sign-conversion` | ✅ enforced (`-Werror`) |
+| 8 | `return-type` + `return-mismatch` | ✅ enforced (`-Werror`); register-garbage class |
 
-Phases 1–7 are complete and locked in — the dangerous 32→64-bit pointer/int
+Phases 1–8 are complete and locked in — the dangerous 32→64-bit pointer/int
 hazards (bad casts, int/pointer conversions, and implicitly-declared functions
 whose `int` return truncates a pointer) build clean as errors, the dead source
 files are gone, every function now has a real prototype and declaration, the
 LP64 width truncations (`long`/`size_t`/`ssize_t`-into-`int`) are explicit, the
-signed/unsigned implicit conversions are explicit, and the `asan-ubsan` preset
-builds + runs the golden flow clean. The remaining 64-bit work is the later
-ladder (issues #12–#14: `return-type`, `implicit-int-conversion`, flag
-consolidation).
+signed/unsigned implicit conversions are explicit, every non-void function now
+returns a value on all paths (or was retyped to `void`) so no caller reads a
+garbage register, and the `asan-ubsan` preset builds + runs the golden flow
+clean. The remaining 64-bit work is the later ladder (issues #13–#14:
+`implicit-int-conversion`, flag consolidation).
 
 > **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
 > and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
@@ -360,3 +362,72 @@ mirrored mapgen.
 Probe (`-Wsign-conversion`) reports 0 on both presets; both targets build clean
 with the new `-Werror` flags; debug and asan-ubsan golden gates both `YES`
 (byte-identical) and asan/ubsan clean.
+
+### Phase 8 — `return-type` + `return-mismatch` (issue #12) ✅ done
+
+`-Wreturn-type -Werror=return-type` and `-Wreturn-mismatch -Werror=return-mismatch`
+are now inlined into both targets' `target_compile_options` blocks (**not**
+Clang-only — no `if (CMAKE_C_COMPILER_ID …)` guard, unlike Phase 6's shorten
+flag). The `-Wno-return-mismatch` / `-Wno-return-type` pair was dropped from
+`LEGACY_C_FLAGS`. This is the **register-garbage** class: a non-void function
+that falls off the end (or hits a bare `return;`) leaves the caller reading an
+uninitialized register — 8 bytes on LP64 vs 4 on ILP32, so genuinely worse on
+64-bit. It is the exact class that caused the `fact/100` `st -32` golden flicker
+(issue #9): `i_use()` fell off the end and its garbage return register became
+`command->status`. Mirrors `../olympia-g1#13`; G2's flagged set differs (own
+mapgen, plus `setup_html_*`/`copy_public_turns`/`add_chamber`/`choose_quest_monster`
+that G1 lacks) but the two fix shapes are identical.
+
+> **Inventory trap (the G1 `-ferror-limit` gotcha, hit here too).** Clang's
+> default `-ferror-limit=19` truncated the warn-only sweep: `-Wreturn-mismatch`
+> is **error-by-default** in this clang (Apple clang 21), so once the early
+> `return-mismatch` sites in `mapgen.c` accumulated the build cut off the rest
+> of the file's diagnostics. The first sweep reported only **61** sites (27
+> mapgen + 34 olympia); a re-sweep with `-ferror-limit=0` (and the `-Werror`
+> lockdown build itself) revealed the true total of **91** sites in this phase:
+> **51** in `mapgen.c`, **14** in `main.c`, and **26** olympia singles (plus the
+> 3 fixed early, below). Reconcile against an unlimited error limit, **not** the
+> truncated first pass — the issue body's "~22 mapgen + ~14 main" undercounted
+> for this reason; the maintainer comment's "~56 mapgen + ~21 main" raw estimate
+> was closer.
+
+**Three sites were fixed early** (ahead of this phase, while chasing the flicker —
+verified still in place): `i_use()` (`return TRUE` when a use-skill has no
+interrupt handler — the flicker root cause, 211346b), `exp_s()` (`return ""`
+after the switch default), and `learn_skill()` (retyped `void` + `use.h` proto)
+— all in `olympia/use.c`, commits 211346b + f964959.
+
+Two fix shapes, both representation-preserving (golden byte-identical):
+
+- **Retype to `void`** the legacy default-`int` procedures whose callers all
+  ignore the return (definition + every `proto.h`/`*.h`/`stack.h` declaration in
+  lockstep, verified no caller consumes the value). **49 mapgen.c** pipeline
+  helpers (`set_regions`, `random_province`, `make_*`, `gate_*`, `count_*`,
+  `print_*`, `bridge_*`, `dump_*`, `clear_*`, `read_map`, `open_fps`, …) and the
+  olympia void-semantic helpers (`check_db`, `init_spaces`, `move_prisoner`,
+  `queue`, static `gm_count_stuff`/`add_chamber`, and the **14 `main.c`**
+  report/init writers `call_init_routines`, `write_totimes`/`_email`/
+  `_player_list`/`_forwards`/`_factions`/`_forward_sup`/`_faction_sup`,
+  `mail_reports`, `setup_html_dir`/`setup_html_all`, `set_html_pass`,
+  `output_html_rep`, `copy_public_turns`).
+- **Add the missing return value** where the function genuinely returns one.
+  Most fall-off paths sit after a **live** `assert(FALSE)` (asserts are on in the
+  `-Og` debug and `asan-ubsan` builds, so the added return is unreachable in the
+  golden run → golden-neutral), matching the value G1 chose: `return 0`
+  (`hinder_med_chance`, `reduce_qty`, `hidden_count_to_index`, `loc_depth`,
+  `fort_covers`, `lead_char_pos`, `choose_quest_monster`), `return ""`
+  (`liner_desc`, `rank_s`, `mage_menial_how`, `fog_excuse`, mapgen `name_guild`),
+  `return FALSE` (`v_decree`, `here_precedes`, `promote_after`), `return NULL`
+  (`find_attacker`, `find_defender`); and a real value on the reachable fall-off
+  path: `return TRUE` (`v_unseal_gate`, `d_rally`, `i_repair` — which **stays
+  `int`**, it's the `repair` interrupt handler in `use_tbl`), `return new`
+  (`new_storm`).
+
+**`order.c queue()`** (the falls-off-end noted in the #6 aside) is now `void`:
+all callers ignore it and it never produced a value. Phase 4 had already made it
+variadic with a `proto.h` prototype, so no register-ABI hazard remained — this
+just makes the type honest.
+
+Probe (`-Wreturn-type -Wreturn-mismatch` at `-ferror-limit=0`) reports 0 on both
+presets; both targets build clean with the new `-Werror` flags; debug and
+asan-ubsan golden gates both `YES` (byte-identical) and asan/ubsan clean.
