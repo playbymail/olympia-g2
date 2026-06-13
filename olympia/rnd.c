@@ -151,7 +151,7 @@ xMD5Final(byte digest[16], struct xMD5Context *ctx)
 
 	byteSwap(ctx->buf, 4);
 	bcopy(ctx->buf, digest, 16);
-	bzero(ctx,sizeof(ctx));
+	bzero(ctx,sizeof(*ctx));	/* wipe the whole struct, not the pointer (LP64: 8 bytes) */
 }
 
 
