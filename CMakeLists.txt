@@ -151,7 +151,9 @@ set(LEGACY_C_FLAGS
         -Wno-pointer-to-int-cast
         -Wno-return-mismatch
         -Wno-return-type
-        -Wno-sizeof-pointer-memaccess
+        # sizeof-pointer-memaccess is now enforced per-target (issue #10,
+        # Phase 6) — the MD5 bzero(ctx, sizeof(ctx)) bug fixed, promoted to
+        # -Werror below.
         -Wno-tautological-constant-out-of-range-compare
 )
 
@@ -211,7 +213,16 @@ target_compile_options(mapgen-g2 PRIVATE
     -Wimplicit-function-declaration -Werror=implicit-function-declaration
     # Phase 5 - lock down remaining declarations (issue #9)
     -Wmissing-declarations -Werror=missing-declarations
+    # Phase 6 (issue #10): a sizeof(ptr) where sizeof(*ptr) is meant grows
+    # 4->8 bytes on LP64 — a real corruption risk. The MD5 bzero bug is fixed.
+    -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess
 )
+# -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
+if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(mapgen-g2 PRIVATE
+        -Wshorten-64-to-32 -Werror=shorten-64-to-32
+    )
+endif ()
 
 # ------------------------------------------------------------------------------
 # G2 olympia (main game engine)
@@ -275,7 +286,16 @@ target_compile_options(olympia-g2 PRIVATE
     # non-literal-format call sites were wrapped as out(who, "%s", x) /
     # sprintf(dst, "%s", src), so no suppression remains.
     -Wformat -Werror=format
+    # Phase 6 (issue #10): a sizeof(ptr) where sizeof(*ptr) is meant grows
+    # 4->8 bytes on LP64 — a real corruption risk. The MD5 bzero bug is fixed.
+    -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess
 )
+# -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
+if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(olympia-g2 PRIVATE
+        -Wshorten-64-to-32 -Werror=shorten-64-to-32
+    )
+endif ()
 
 # Optional ASan/UBSan via the asan-ubsan preset (OLYMPIA_SANITIZE=ON).
 olympia_enable_sanitizers(olympia-g2)

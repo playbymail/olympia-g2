@@ -108,14 +108,16 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 3.5 | **Remove dead/unused source files** | ✅ done |
 | 4 | `strict-prototypes`, `missing-prototypes`, `implicit-function-declaration` | ✅ enforced (`-Werror`) |
 | 5 | `missing-declarations` + asan/ubsan verified against the golden flow | ✅ enforced (`-Werror`); flicker fixed |
+| 6 | `shorten-64-to-32` (Clang-guarded) + `sizeof-pointer-memaccess` | ✅ enforced (`-Werror`); MD5 `bzero` bug fixed |
 
-Phases 1–5 are complete and locked in — the dangerous 32→64-bit pointer/int
+Phases 1–6 are complete and locked in — the dangerous 32→64-bit pointer/int
 hazards (bad casts, int/pointer conversions, and implicitly-declared functions
 whose `int` return truncates a pointer) build clean as errors, the dead source
-files are gone, every function now has a real prototype and declaration, and the
-`asan-ubsan` preset builds + runs the golden flow clean. The remaining 64-bit
-work is the later ladder (issues #10–#14: `shorten-64-to-32`, `sign-conversion`,
-`return-type`, `implicit-int-conversion`, flag consolidation).
+files are gone, every function now has a real prototype and declaration, the
+LP64 width truncations (`long`/`size_t`/`ssize_t`-into-`int`) are explicit, and
+the `asan-ubsan` preset builds + runs the golden flow clean. The remaining 64-bit
+work is the later ladder (issues #11–#14: `sign-conversion`, `return-type`,
+`implicit-int-conversion`, flag consolidation).
 
 > **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
 > and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
@@ -264,3 +266,45 @@ manifest and the `golden_check.sh` flicker special case (plus the
 > maintainer decided against adding CI workflows to this repo (2026-06-13). The
 > sanitizer gate is run locally via `OLYMPIA_PRESET=asan-ubsan` + the golden
 > scripts (see [Test](#test--golden-snapshots-must-stay-green)).
+
+### Phase 6 — `shorten-64-to-32` + `sizeof-pointer-memaccess` (issue #10) ✅ done
+
+The **first real 64-bit phase** (the earlier phases guarded *pointer/int*
+hazards; this one surfaces *width* truncation). `-Wshorten-64-to-32` isolates
+exactly the `long`/`size_t`/`ssize_t`-into-`int`/`short` truncations that diverge
+between ILP32 and LP64. Both flags are now `-Werror` on both targets — the
+shorten flag Clang-guarded (`if (CMAKE_C_COMPILER_ID MATCHES "Clang")`, it's a
+Clang-only diagnostic), `sizeof-pointer-memaccess` portable. They're inlined in
+both `target_compile_options` blocks alongside the Phase 1–5 flags; the
+`-Wno-sizeof-pointer-memaccess` suppression was removed from `LEGACY_C_FLAGS`.
+
+**The `sizeof-pointer-memaccess` bug (the concrete defect, 2 sites).** In
+`MD5Final` the defensive post-digest wipe was `bzero(ctx, sizeof(ctx))` where
+`ctx` is `struct xMD5Context *` — `sizeof(ctx)` is the *pointer* size (8 on LP64,
+was 4 on ILP32), so it zeroed only 8 bytes instead of `sizeof(*ctx)`. Fixed to
+`sizeof(*ctx)` in **both** `olympia/rnd.c` and `mapgen/rnd.c` (G2's MD5 RNG, no
+G1 counterpart). Golden-safe: the digest is `bcopy`'d out before the wipe, so the
+produced MD5 — and the RNG built on it — is unchanged.
+
+**15 `-Wshorten-64-to-32` sites** (10 olympia in 6 files + 5 mapgen), all fixed
+representation-preservingly (the implicit conversion already truncated exactly
+this way, so golden stays byte-identical):
+
+- `z.c` + `mapgen/z.c` `readlin` path: `nread` retyped `int`→`ssize_t` (its
+  source is `read()`), clearing both `nread = read(...)` sites in each;
+  downstream indexing/compares are unaffected.
+- `mapgen/z.c` `str_save`: `(unsigned)` cast on `strlen(s) + 1` feeding mapgen's
+  `my_malloc(unsigned size)`. (**Differs from G1:** olympia's `my_malloc` takes
+  `size_t` — checked_alloc-based — so its `str_save` was never flagged.)
+- `olympia/rnd.c` `md5_int`: `return (int) buf[0]` — low 32 bits of the MD5 word
+  (a 32-bit `unsigned long` on ILP32).
+- `olympia/code.c` `letter_val`: `return (int)(p-let)` — index into a fixed short
+  string.
+- `strlen()`→`int` name/line/word lengths, provably `<2^31`: documented `(int)`
+  casts in `z.c`/`mapgen/z.c` `fuzzy_strcmp`, `c2.c` `line_length_check`,
+  `check.c` `check_loc_name_lengths`, `eat.c` `do_eat_command`, `report.c`
+  `strip_leading_stupid_word`.
+
+Probe (`-Wshorten-64-to-32`) now reports 0; both targets build clean with the new
+`-Werror` flags; debug and asan-ubsan golden gates both `YES` (byte-identical)
+and asan/ubsan clean.
