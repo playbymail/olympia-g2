@@ -394,22 +394,22 @@ extern void scan_char_skill_lore(void);
 extern void show_lore_sheets(void);
 
 /* olympia/main.c */
-extern int call_init_routines(void);
+extern void call_init_routines(void);
 extern int copy_public_turns(void);
 extern int mail_reports(void);
 extern int output_html_rep(int pl);
 extern int send_rep(int pl, int turn);
-extern int set_html_pass(int pl);
+extern void set_html_pass(int pl);
 extern int setup_html_all(void);
-extern int setup_html_dir(int pl);
+extern void setup_html_dir(int pl);
 extern int v_remail(struct command *c);
-extern int write_email(void);
+extern void write_email(void);
 extern int write_faction_sup(int who_for, int target, FILE *fp);
-extern int write_factions(void);
+extern void write_factions(void);
 extern int write_forward_sup(int who_for, int target, FILE *fp);
-extern int write_forwards(void);
-extern int write_player_list(void);
-extern int write_totimes(void);
+extern void write_forwards(void);
+extern void write_player_list(void);
+extern void write_totimes(void);
 
 /* olympia/make.c */
 extern int d_generic_make(struct command *c, struct make *t);

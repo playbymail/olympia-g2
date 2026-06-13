@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 }
 
 
-int call_init_routines(void)
+void call_init_routines(void)
 {
 
 	init_lower();
@@ -272,7 +272,7 @@ int call_init_routines(void)
 }
 
 
-int write_totimes(void)
+void write_totimes(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -304,7 +304,7 @@ int write_totimes(void)
 }
 
 
-int write_email(void)
+void write_email(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -375,7 +375,7 @@ list_a_player(FILE *fp, int pl, int *flag)
 }
 
 
-int write_player_list(void)
+void write_player_list(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -430,7 +430,7 @@ int write_forward_sup(int who_for, int target, FILE *fp)
 }
 
 
-int write_forwards(void)
+void write_forwards(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -489,7 +489,7 @@ int write_faction_sup(int who_for, int target, FILE *fp)
 }
 
 
-int write_factions(void)
+void write_factions(void)
 {
 	FILE *fp;
 	char *fnam;
@@ -657,7 +657,7 @@ int setup_html_all(void)
 	copy_public_turns();
 }
 
-int setup_html_dir(int pl)
+void setup_html_dir(int pl)
 {
 	char fnam[LEN];
 	char fnam2[LEN];
@@ -688,7 +688,7 @@ int setup_html_dir(int pl)
 	fclose(fp);
 }
 
-int set_html_pass(int pl)
+void set_html_pass(int pl)
 {
 	char buf[LEN];
 	struct entity_player *p;
