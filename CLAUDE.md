@@ -72,6 +72,11 @@ Scripts auto-detect the repo root and look for binaries at
 
 - Legacy C style: tabs, ANSI prototypes for definitions, terse names. Match the
   surrounding file; don't reformat untouched code.
+- **No CI workflows.** This repo does not use CI (no `.github/workflows`, no
+  GitHub Actions). Maintainer decision (2026-06-13, issue #9): do **not** add CI
+  pipelines. Gates are run locally — the golden gate via `./tests/olympia/golden_check.sh`,
+  and the sanitizer gate via `OLYMPIA_PRESET=asan-ubsan` against the same golden
+  flow. Don't propose or wire CI even when an issue's text asks for it.
 - **Golden output is the contract.** Behavior changes that alter engine output
   must be deliberate and the snapshot updated in the same change with a note on
   why. Modernization changes (prototypes, casts, dead-code removal) must produce
