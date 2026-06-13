@@ -5,89 +5,93 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-function(legacy_build_flags tgt)
-    # Flags to hide legacy code warnings.
-    # We'll need to roll some of these back when we're updating the code to run as 64-bit.
+# =============================================================================
+# Compiler-flag conventions (read before "tidying up" this file)
+# =============================================================================
+# The 32->64-bit modernization ladder (Phases 1-8) is complete; every warning
+# class below was triaged to ZERO and locked as an error. Issue #13
+# (implicit-int-conversion) is likewise driven to zero and locked, as a
+# separate code-quality track -- NOT a 64-bit hazard. See CLAUDE.md
+# "Modernization status" for the per-phase history and "Warning policy" for how
+# new warnings are triaged.
+#
+# 1. Enforced classes are written as an explicit pair, one class per line:
+#        -Wfoo -Werror=foo
+#    The bare -Wfoo is technically redundant (-Werror=foo already enables it),
+#    but the pair is deliberate: it records that the class was driven to zero
+#    and locked. Do NOT collapse these to bare -Werror=foo -- the redundancy is
+#    a record of completed work, not clutter.
+#
+# 2. -Wno-foo suppressions are legacy idioms this ~60K-line codebase still
+#    relies on and that are NOT being chased down right now.
+#
+# The shared set is applied identically to every target via
+# olympia_compile_flags(), with optional sanitizers via
+# olympia_enable_sanitizers(). The ONLY per-target warning difference is the
+# format class: -Wformat -Werror=format is enforced on olympia-g2 only (the
+# engine prints player-facing text and the non-literal-format sites were fixed
+# in issue #6, so the full class is an error with no sub-suppression). mapgen-g2
+# emits no player-facing formatted output and does not carry it. Optimization
+# level (-O1 / -Og) is likewise a per-target, call-site addition.
+# =============================================================================
+
+option(OLYMPIA_SANITIZE "Enable sanitizer instrumentation" OFF)
+set(OLYMPIA_SANITIZERS "address,undefined" CACHE STRING "Comma-separated sanitizers, e.g. address,undefined")
+
+# All shared engine warning flags, applied identically to every target.
+# Per-target additions (optimization level, olympia-only -Wformat) live at the
+# call site.
+function(olympia_compile_flags tgt)
     target_compile_options(${tgt} PRIVATE
+        # --- Suppressions: legacy idioms left as-is ---
         -Wno-comment
         -Wno-compare-distinct-pointer-types
         -Wno-dangling-else
         -Wno-deprecated-declarations
         -Wno-extra-tokens
-        # -Wno-format / -Wno-format-security retired (issues #5, #6): format
-        # checking is now -Werror=format on olympia-g2 with no suppression — the
-        # Class-5 non-literal-format sites were fixed in #6.
         -Wno-incompatible-library-redeclaration
-        -Wno-incompatible-pointer-types
-        -Wno-int-conversion
-        -Wno-int-to-pointer-cast
         -Wno-logical-not-parentheses
         -Wno-macro-redefined
         -Wno-multichar
         -Wno-non-literal-null-conversion
         -Wno-parentheses
-        -Wno-pointer-to-int-cast
-        -Wno-return-mismatch
-        -Wno-return-type
-        -Wno-sizeof-pointer-memaccess
         -Wno-tautological-constant-out-of-range-compare
-    )
-endfunction()
 
-function(phase_1_build_flags tgt)
-    # i/pointer lists triage - only pointer-cast errors.
-    target_compile_options(${tgt} PRIVATE
-        -Wint-to-pointer-cast -Werror=int-to-pointer-cast
-        -Wpointer-to-int-cast -Werror=pointer-to-int-cast
+        # --- Modernization classes triaged to 0 and locked (CLAUDE.md) ---
+        -Wint-to-pointer-cast -Werror=int-to-pointer-cast                # Phase 1
+        -Wpointer-to-int-cast -Werror=pointer-to-int-cast                # Phase 1
+        -Wincompatible-pointer-types -Werror=incompatible-pointer-types  # Phase 2
+        -Wint-conversion -Werror=int-conversion                          # Phase 3
+        -Wstrict-prototypes -Werror=strict-prototypes                    # Phase 4
+        -Wmissing-prototypes -Werror=missing-prototypes                  # Phase 4
+        -Wimplicit-function-declaration -Werror=implicit-function-declaration  # Phase 4
+        -Wmissing-declarations -Werror=missing-declarations              # Phase 5
+        # A sizeof(ptr) where sizeof(*ptr) is meant grows 4->8 bytes on LP64
+        # (a real corruption risk). The MD5 bzero bug is fixed; audited clean.
+        -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess      # Phase 6 (#10)
+        # Signed<->unsigned implicit conversions (arch-independent, large class).
+        -Wsign-conversion -Werror=sign-conversion                        # Phase 7 (#11)
+        # A non-void function that falls off the end leaves the caller reading a
+        # garbage register -- on LP64 an 8-byte garbage long/pointer. This is the
+        # class that caused the fact/100 "st -32" flicker (#9) via i_use(). Not
+        # Clang-only (GCC names return-mismatch under -Wreturn-type, but the
+        # explicit pair is harmless and documents the locked class).
+        -Wreturn-type -Werror=return-type                                # Phase 8 (#12)
+        -Wreturn-mismatch -Werror=return-mismatch                        # Phase 8 (#12)
     )
-endfunction()
 
-function(phase_2_build_flags tgt)
-    # incompatible pointer types
-    target_compile_options(${tgt} PRIVATE
-        -Wincompatible-pointer-types -Werror=incompatible-pointer-types
-    )
+    # Clang-only diagnostic spellings; GCC folds each into a broader class
+    # (-Wconversion) not enabled here.
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        target_compile_options(${tgt} PRIVATE
+            # The LP64 width-truncation class (long/size_t/ssize_t into int).
+            -Wshorten-64-to-32 -Werror=shorten-64-to-32                  # Phase 6 (#10)
+            # Code-quality, NOT a 64-bit hazard: int->short/char narrowing into
+            # entity struct fields. Identical on ILP32/LP64.
+            -Wimplicit-int-conversion -Werror=implicit-int-conversion    # issue #13
+        )
+    endif()
 endfunction()
-
-function(phase_3_build_flags tgt)
-    # integer conversions
-    target_compile_options(${tgt} PRIVATE
-        -Wint-conversion -Werror=int-conversion
-    )
-endfunction()
-
-function(phase_4_build_flags tgt)
-    # forward declarations; start turning on errors
-    target_compile_options(${tgt} PRIVATE
-        -Wmissing-prototypes -Werror=missing-prototypes
-        -Wstrict-prototypes -Werror=strict-prototypes
-        -Wimplicit-function-declaration -Werror=implicit-function-declaration
-    )
-endfunction()
-
-function(phase_5_build_flags tgt)
-    # C11's enabled, sanitizers enabled
-    target_compile_options(${tgt} PRIVATE
-        -Wmissing-declarations -Werror=missing-declarations
-        # string literal to char* is a classic legacy footgun
-        #-Wwrite-strings #-Werror=write-strings
-        -fno-common
-        -fno-omit-frame-pointer
-        -fno-optimize-sibling-calls
-        -fsanitize=address,undefined
-        -fno-sanitize-recover=all
-    )
-    target_link_options(${tgt} PRIVATE
-        -fno-common
-        -fno-omit-frame-pointer
-        -fno-optimize-sibling-calls
-        -fsanitize=address,undefined
-        -fno-sanitize-recover=all
-    )
-endfunction()
-
-option(OLYMPIA_SANITIZE "Enable sanitizer instrumentation" OFF)
-set(OLYMPIA_SANITIZERS "address,undefined" CACHE STRING "Comma-separated sanitizers, e.g. address,undefined")
 
 function(olympia_enable_sanitizers tgt)
     if(NOT OLYMPIA_SANITIZE)
@@ -128,52 +132,6 @@ function(olympia_enable_sanitizers tgt)
     endif()
 endfunction()
 
-# Engine-specific flags to hide legacy code warnings. We'll need to roll
-# some of these back when we're updating the code to run as 64-bit.
-set(LEGACY_C_FLAGS
-        -Wno-comment
-        -Wno-compare-distinct-pointer-types
-        -Wno-dangling-else
-        -Wno-deprecated-declarations
-        -Wno-extra-tokens
-        # -Wno-format / -Wno-format-security retired (issues #5, #6): format
-        # checking is now -Werror=format on olympia-g2 with no suppression — the
-        # Class-5 non-literal-format sites were fixed in #6.
-        -Wno-incompatible-library-redeclaration
-        -Wno-incompatible-pointer-types
-        -Wno-int-conversion
-        -Wno-int-to-pointer-cast
-        -Wno-logical-not-parentheses
-        -Wno-macro-redefined
-        -Wno-multichar
-        -Wno-non-literal-null-conversion
-        -Wno-parentheses
-        -Wno-pointer-to-int-cast
-        # return-type / return-mismatch are now enforced per-target (issue #12,
-        # Phase 8) — every non-void function that fell off the end (a garbage
-        # register read, 8 bytes on LP64) was given a real return or retyped to
-        # void; promoted to -Werror below.
-        # sizeof-pointer-memaccess is now enforced per-target (issue #10,
-        # Phase 6) — the MD5 bzero(ctx, sizeof(ctx)) bug fixed, promoted to
-        # -Werror below.
-        -Wno-tautological-constant-out-of-range-compare
-)
-
-# Create a stricter set of compiler flags to catch
-set(LEGACY_C_FLAGS_STRICT
-        ${LEGACY_C_FLAGS}
-)
-
-# Remove suppressions that hide 64-bit hazards
-list(REMOVE_ITEM LEGACY_C_FLAGS_STRICT
-        -Wno-int-conversion
-        -Wno-int-to-pointer-cast
-        -Wno-pointer-to-int-cast
-        -Wno-implicit-function-declaration
-        -Wno-return-mismatch
-        -Wno-return-type
-)
-
 # Platform-specific defines
 if (LINUX)
     add_compile_definitions(OLYMPIA_CC_LINUX)
@@ -203,42 +161,8 @@ target_include_directories(mapgen-g2 PRIVATE mapgen/ lib/)
 # Require C11 at the target level (project-level CMAKE_C_STANDARD remains the
 # default for future targets). See issue #4.
 target_compile_features(mapgen-g2 PRIVATE c_std_11)
-target_compile_options(mapgen-g2 PRIVATE
-    ${LEGACY_C_FLAGS} -O1 -g
-    -Wint-conversion -Werror=int-conversion
-    -Wint-to-pointer-cast -Werror=int-to-pointer-cast
-    -Wpointer-to-int-cast -Werror=pointer-to-int-cast
-    -Wincompatible-pointer-types -Werror=incompatible-pointer-types
-    # Phase 4 - prototypes & declarations
-    -Wmissing-prototypes -Werror=missing-prototypes
-    -Wstrict-prototypes -Werror=strict-prototypes
-    -Wimplicit-function-declaration -Werror=implicit-function-declaration
-    # Phase 5 - lock down remaining declarations (issue #9)
-    -Wmissing-declarations -Werror=missing-declarations
-    # Phase 6 (issue #10): a sizeof(ptr) where sizeof(*ptr) is meant grows
-    # 4->8 bytes on LP64 — a real corruption risk. The MD5 bzero bug is fixed.
-    -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess
-    # Phase 7 (issue #11): signed/unsigned implicit conversions. Arch-independent
-    # but a large class — qsort nmemb counts, the loop_known macro, MD5 RNG mixes.
-    -Wsign-conversion -Werror=sign-conversion
-    # Phase 8 (issue #12): a non-void function falling off the end (or hitting a
-    # bare `return;`) leaves the caller reading a garbage register — 8 bytes on
-    # LP64. Not Clang-only. The 27 mapgen helpers were retyped to void.
-    -Wreturn-type -Werror=return-type
-    -Wreturn-mismatch -Werror=return-mismatch
-)
-# -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
-# -Wimplicit-int-conversion (issue #13) is likewise Clang-only — GCC folds it
-# into the broader -Wconversion. This is a code-quality / tech-debt class
-# (int->short/char narrowing into entity fields), NOT a 64-bit hazard:
-# arch-independent, identical on ILP32 and LP64. Driven to zero with explicit
-# (short)/(schar)/(char) casts; representation-preserving (golden byte-identical).
-if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-    target_compile_options(mapgen-g2 PRIVATE
-        -Wshorten-64-to-32 -Werror=shorten-64-to-32
-        -Wimplicit-int-conversion -Werror=implicit-int-conversion
-    )
-endif ()
+target_compile_options(mapgen-g2 PRIVATE -O1 -g)
+olympia_compile_flags(mapgen-g2)
 
 # ------------------------------------------------------------------------------
 # G2 olympia (main game engine)
@@ -281,53 +205,10 @@ target_include_directories(olympia-g2 PRIVATE olympia/ lib/)
 # Require C11 at the target level (project-level CMAKE_C_STANDARD remains the
 # default for future targets). See issue #4.
 target_compile_features(olympia-g2 PRIVATE c_std_11)
-target_compile_options(olympia-g2 PRIVATE
-    ${LEGACY_C_FLAGS} -Og -g
-    # Phase 1 - list triage - only pointer-cast errors
-    -Wint-to-pointer-cast -Werror=int-to-pointer-cast
-    -Wpointer-to-int-cast -Werror=pointer-to-int-cast
-    # Phase 2 - incompatible pointer types
-    -Wincompatible-pointer-types -Werror=incompatible-pointer-types
-    # Phase 3 - integer conversions
-    -Wint-conversion -Werror=int-conversion
-    # Phase 4 - prototypes & declarations
-    -Wmissing-prototypes -Werror=missing-prototypes
-    -Wstrict-prototypes -Werror=strict-prototypes
-    -Wimplicit-function-declaration -Werror=implicit-function-declaration
-    # Phase 5 - lock down remaining declarations (issue #9)
-    -Wmissing-declarations -Werror=missing-declarations
-    # Format/vararg lockdown (issue #5) + non-literal-format hardening (issue #6):
-    # the whole format-string class is a compile error, including the
-    # format-security / format-nonliteral ("potentially insecure") sites — the 5
-    # non-literal-format call sites were wrapped as out(who, "%s", x) /
-    # sprintf(dst, "%s", src), so no suppression remains.
-    -Wformat -Werror=format
-    # Phase 6 (issue #10): a sizeof(ptr) where sizeof(*ptr) is meant grows
-    # 4->8 bytes on LP64 — a real corruption risk. The MD5 bzero bug is fixed.
-    -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess
-    # Phase 7 (issue #11): signed/unsigned implicit conversions. Arch-independent
-    # but a large class — qsort nmemb counts, the loop_known macro, MD5 RNG mixes.
-    -Wsign-conversion -Werror=sign-conversion
-    # Phase 8 (issue #12): a non-void function falling off the end (or hitting a
-    # bare `return;`) leaves the caller reading a garbage register — 8 bytes on
-    # LP64. This is the class that caused the fact/100 "st -32" flicker (#9) via
-    # i_use(). Not Clang-only. Missing returns added / void-converted across the
-    # engine + main.c writers; queue() resolved.
-    -Wreturn-type -Werror=return-type
-    -Wreturn-mismatch -Werror=return-mismatch
-)
-# -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
-# -Wimplicit-int-conversion (issue #13) is likewise Clang-only — GCC folds it
-# into the broader -Wconversion. This is a code-quality / tech-debt class
-# (int->short/char narrowing into entity fields), NOT a 64-bit hazard:
-# arch-independent, identical on ILP32 and LP64. Driven to zero with explicit
-# (short)/(schar)/(char) casts; representation-preserving (golden byte-identical).
-if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-    target_compile_options(olympia-g2 PRIVATE
-        -Wshorten-64-to-32 -Werror=shorten-64-to-32
-        -Wimplicit-int-conversion -Werror=implicit-int-conversion
-    )
-endif ()
+# -Wformat -Werror=format is olympia-only (see the conventions block at the top):
+# the full format class is an error here, no sub-suppression, after issue #6.
+target_compile_options(olympia-g2 PRIVATE -Og -g -Wformat -Werror=format)
+olympia_compile_flags(olympia-g2)
 
 # Optional ASan/UBSan via the asan-ubsan preset (OLYMPIA_SANITIZE=ON).
 olympia_enable_sanitizers(olympia-g2)
