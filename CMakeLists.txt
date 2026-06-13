@@ -216,6 +216,9 @@ target_compile_options(mapgen-g2 PRIVATE
     # Phase 6 (issue #10): a sizeof(ptr) where sizeof(*ptr) is meant grows
     # 4->8 bytes on LP64 — a real corruption risk. The MD5 bzero bug is fixed.
     -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess
+    # Phase 7 (issue #11): signed/unsigned implicit conversions. Arch-independent
+    # but a large class — qsort nmemb counts, the loop_known macro, MD5 RNG mixes.
+    -Wsign-conversion -Werror=sign-conversion
 )
 # -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -289,6 +292,9 @@ target_compile_options(olympia-g2 PRIVATE
     # Phase 6 (issue #10): a sizeof(ptr) where sizeof(*ptr) is meant grows
     # 4->8 bytes on LP64 — a real corruption risk. The MD5 bzero bug is fixed.
     -Wsizeof-pointer-memaccess -Werror=sizeof-pointer-memaccess
+    # Phase 7 (issue #11): signed/unsigned implicit conversions. Arch-independent
+    # but a large class — qsort nmemb counts, the loop_known macro, MD5 RNG mixes.
+    -Wsign-conversion -Werror=sign-conversion
 )
 # -Wshorten-64-to-32 (the LP64 width-truncation class, issue #10) is Clang-only.
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")

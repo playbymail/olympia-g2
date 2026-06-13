@@ -109,15 +109,17 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 4 | `strict-prototypes`, `missing-prototypes`, `implicit-function-declaration` | ✅ enforced (`-Werror`) |
 | 5 | `missing-declarations` + asan/ubsan verified against the golden flow | ✅ enforced (`-Werror`); flicker fixed |
 | 6 | `shorten-64-to-32` (Clang-guarded) + `sizeof-pointer-memaccess` | ✅ enforced (`-Werror`); MD5 `bzero` bug fixed |
+| 7 | `sign-conversion` | ✅ enforced (`-Werror`) |
 
-Phases 1–6 are complete and locked in — the dangerous 32→64-bit pointer/int
+Phases 1–7 are complete and locked in — the dangerous 32→64-bit pointer/int
 hazards (bad casts, int/pointer conversions, and implicitly-declared functions
 whose `int` return truncates a pointer) build clean as errors, the dead source
 files are gone, every function now has a real prototype and declaration, the
-LP64 width truncations (`long`/`size_t`/`ssize_t`-into-`int`) are explicit, and
-the `asan-ubsan` preset builds + runs the golden flow clean. The remaining 64-bit
-work is the later ladder (issues #11–#14: `sign-conversion`, `return-type`,
-`implicit-int-conversion`, flag consolidation).
+LP64 width truncations (`long`/`size_t`/`ssize_t`-into-`int`) are explicit, the
+signed/unsigned implicit conversions are explicit, and the `asan-ubsan` preset
+builds + runs the golden flow clean. The remaining 64-bit work is the later
+ladder (issues #12–#14: `return-type`, `implicit-int-conversion`, flag
+consolidation).
 
 > **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
 > and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
@@ -308,3 +310,53 @@ this way, so golden stays byte-identical):
 Probe (`-Wshorten-64-to-32`) now reports 0; both targets build clean with the new
 `-Werror` flags; debug and asan-ubsan golden gates both `YES` (byte-identical)
 and asan/ubsan clean.
+
+### Phase 7 — `sign-conversion` (issue #11) ✅ done
+
+`-Wsign-conversion -Werror=sign-conversion` is now inlined into both targets'
+`target_compile_options` blocks (it's **not** Clang-only — no
+`if (CMAKE_C_COMPILER_ID …)` guard, unlike Phase 6's shorten flag). This is the
+signed/unsigned implicit-conversion class: arch-independent (it bites the same on
+ILP32 and LP64), but a large population. There was no `-Wno-sign-conversion`
+suppression in `LEGACY_C_FLAGS` to drop. **Mirrors `../olympia-g1#11` minus the
+seed fix** — G1's Phase 7 canonicalised a `seed[3]` signed/unsigned `extern`
+mismatch in its `drand48`/`erand48` RNG; G2 replaced that RNG with an MD5 RNG, so
+there is **no `seed[3]`** and nothing to canonicalise. G2's distribution is
+instead rnd.c-heavy (the MD5 RNG mixes `unsigned`/`int`), unlike G1's io.c-heavy
+spread.
+
+**43 sites** matched the warn-only debug sweep exactly (rnd.c 12, gm.c 7, perm.c
+6, report.c 5, mapgen z.c 2, input.c 2, use.c 2, and singles in buy.c, check.c,
+io.c, seed.c, sout.c, summary.c, swear.c). All fixed representation-preservingly
+(the implicit conversion already did exactly this, so golden stays
+byte-identical):
+
+- **MD5 RNG (`olympia/rnd.c` + `mapgen/rnd.c`, 6 each).** `rnd()`:
+  `range = (unsigned)(high-low)`, `r = (int)range`, `mask |= (unsigned)r`,
+  `return (int)(num + (unsigned)low)` — all modulo-2³² identities.
+  `xMD5Update()`: `t + (word32)len` (`len >= 0`). The digest is `bcopy`'d out
+  before any wipe, so the produced MD5 — and the RNG on it — is unchanged.
+- **qsort `nmemb` (bulk).** The `*_len()` count (`int`) feeding qsort's `size_t`
+  `nmemb`, cast `(size_t)`: use.c, buy.c, seed.c, input.c, gm.c (×5), perm.c
+  (×4), report.c (×3), swear.c, check.c.
+- **The shared `loop_known` macro** (`olympia/loop.h`). One `(size_t)` on its
+  embedded `qsort(ilist_len(kn))` clears **all 6** expansion sites at once
+  (summary.c, io.c, gm.c ×2, report.c ×2) — those 6 are *not* separate edits.
+- **`mapgen/z.c`** `*((int *)p) = (int)size` — the `my_malloc` size-header slot
+  (mapgen's `my_malloc` takes `unsigned`). **The fixed `spaces` buffer**:
+  `(size_t)spaces_len` in the `perm.c` subscript and
+  `my_malloc((size_t)spaces_len+1)` in `sout.c`.
+
+**asan-ubsan surfaces 4 more (sanitizer-only).** The `asan-ubsan` preset sanitizes
+**only** `olympia-g2` (`olympia_enable_sanitizers()` isn't called for mapgen-g2);
+under that instrumentation, four `bcopy`/`bzero` int-length args in
+`olympia/rnd.c`'s MD5 core (lines ~98/118/138/144 — `bcopy(…, (size_t)len)`,
+`bzero(p, (size_t)(count+8))`) emit sign-conversion that the `-Og` debug build
+doesn't. They were fixed too (all provably non-negative) so the lockdown holds
+under **both** presets, and mirrored into `mapgen/rnd.c`'s twin MD5 to keep the
+two copies in sync. So the actual edit count is 43 (debug probe) + 4 olympia + 4
+mirrored mapgen.
+
+Probe (`-Wsign-conversion`) reports 0 on both presets; both targets build clean
+with the new `-Werror` flags; debug and asan-ubsan golden gates both `YES`
+(byte-identical) and asan/ubsan clean.
