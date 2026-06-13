@@ -111,6 +111,7 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 6 | `shorten-64-to-32` (Clang-guarded) + `sizeof-pointer-memaccess` | ✅ enforced (`-Werror`); MD5 `bzero` bug fixed |
 | 7 | `sign-conversion` | ✅ enforced (`-Werror`) |
 | 8 | `return-type` + `return-mismatch` | ✅ enforced (`-Werror`); register-garbage class |
+| 13 | `implicit-int-conversion` (Clang-guarded) — **separate code-quality track, NOT a 64-bit hazard** | ✅ enforced (`-Werror`) |
 
 Phases 1–8 are complete and locked in — the dangerous 32→64-bit pointer/int
 hazards (bad casts, int/pointer conversions, and implicitly-declared functions
@@ -120,8 +121,9 @@ LP64 width truncations (`long`/`size_t`/`ssize_t`-into-`int`) are explicit, the
 signed/unsigned implicit conversions are explicit, every non-void function now
 returns a value on all paths (or was retyped to `void`) so no caller reads a
 garbage register, and the `asan-ubsan` preset builds + runs the golden flow
-clean. The remaining 64-bit work is the later ladder (issues #13–#14:
-`implicit-int-conversion`, flag consolidation).
+clean. Issue #13 (`implicit-int-conversion`) is also done, but as a **separate
+code-quality track, not a 64-bit phase** — see below. The remaining ladder work
+is issue #14 (flag consolidation).
 
 > **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
 > and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
@@ -431,3 +433,50 @@ just makes the type honest.
 Probe (`-Wreturn-type -Wreturn-mismatch` at `-ferror-limit=0`) reports 0 on both
 presets; both targets build clean with the new `-Werror` flags; debug and
 asan-ubsan golden gates both `YES` (byte-identical) and asan/ubsan clean.
+
+### Issue #13 — `implicit-int-conversion` (code-quality track) ✅ done
+
+**This is a separate code-quality / tech-debt track, NOT a 64-bit phase.** The
+hits are `int`→`short`/`schar`/`char`/`uchar` narrowing conversions into entity
+struct fields (the fields are narrow types). That narrowing is
+**architecture-independent** — it truncates identically on ILP32 and LP64 — so
+it is **not** a 32→64-bit porting hazard and was deliberately kept off the
+64-bit critical path. Mirrors `../olympia-g1#14` (which also chose option (b):
+drive the class to zero, then lock). Done after Phases 6–8 landed.
+
+`-Wimplicit-int-conversion -Werror=implicit-int-conversion` is now inlined into
+both targets' **Clang-guarded** block (`if (CMAKE_C_COMPILER_ID MATCHES
+"Clang")`), alongside Phase 6's `-Wshorten-64-to-32` — because the flag is
+**Clang-only**: GCC folds this class into the broader `-Wconversion`. (This is
+the same guard shape as Phase 6, and **unlike** Phases 7/8, which are not
+Clang-gated.) Unlike Phases 6–8 there was **no** `-Wno-implicit-int-conversion`
+suppression to remove — this phase only *adds* the flag.
+
+**162 sites, all fixed representation-preservingly** (explicit
+`(short)`/`(schar)`/`(char)`/`(uchar)` casts matching the destination field; the
+implicit narrowing already truncated exactly this way → golden byte-identical):
+
+- **Long tail — 69 sites across 23 olympia TUs + `mapgen/z.c`** (commit
+  `73152e4`). `quest.c` 9, `code.c` 8, `art.c` 7, `cloud.c` 4, `necro.c`/
+  `immed.c` 3 each, and 1–2 across `buy.c`, `c1.c`, `c2.c`, `combat.c`, `day.c`,
+  `eat.c`, `faery.c`, `garr.c`, `gate.c`, `npc.c`, `seed.c`, `storm.c`,
+  `swear.c`, `tunnel.c`, `u.c`, `use.c`, `olympia/z.c`, `mapgen/z.c`. The
+  `code.c` `letter_val()` and `bx[n]->kind/skind` pairs were `replace_all`
+  (identical text, all narrowing).
+- **`io.c` — 92 sites, its own commit** (`8274ba4`), done last (mirrors G1,
+  where io.c was likewise the bulk). It is the entity *deserialization reader*: a
+  uniform `case 'xx': p->field = atoi(t); break;` per narrow field (66 `schar`,
+  24 `short`, 1 `char`, 1 `uchar`), plus three direct `p->f = var;` sites
+  (`know`/`experience`/`consume`). Applied by line number with a guarded script.
+- **`scry.c:630` — the 162nd site** (folded into the lockdown commit `21adc6b`).
+  `p->barrier = -(c->who)` (`short` field) is reported under the sub-category
+  **`-Wimplicit-int-conversion-on-negation`**, whose tag (`…-on-negation]`)
+  slips past a `\[-Wimplicit-int-conversion\]` bracket-grep — so the warn-only
+  probe's filtered count read **161** while the raw count read **162**. Enabling
+  the `-Werror` flag surfaced it. (Lesson: count the class with a *prefix* match,
+  not an exact-bracket match — the on-negation/on-overflow sub-categories share
+  the `-Wimplicit-int-conversion` root but have distinct closing tags.)
+
+Probe (`-Wimplicit-int-conversion` at `-ferror-limit=0`, prefix-matched) reports
+0 on both presets; both targets build clean with the new `-Werror` flag; debug
+and asan-ubsan golden gates both `YES` (byte-identical) and asan/ubsan clean.
