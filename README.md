@@ -1,13 +1,29 @@
 # Olympia G2
 
 **G2** is the second-generation Olympia play-by-mail (PBM) strategy game engine
-(~53K lines of C). It builds on G1, adding HTML reports and tunnels.
+(~53K lines of C). It builds on G1, adding HTML reports and tunnels, and is the
+ancestor of the later G3 and TAG engines.
+
+Sibling engine repositories:
+
+- [olympia-g1](https://github.com/playbymail/olympia-g1)
+- [olympia-g3](https://github.com/playbymail/olympia-g3)
+- [olympia-tag](https://github.com/playbymail/olympia-tag)
 
 This repository is a standalone extraction of the G2 engine from the original
 multi-engine Olympia monorepo. It builds on its own with CMake.
 
 The code is legacy K&R-style C originally targeting 32-bit systems. A modernization
 effort is underway to make it compile cleanly on 64-bit systems.
+
+> [!IMPORTANT]
+> **This is a modernization project, not a development project — no new features.**
+> The goal is to bring the existing G2 engine to clean C11 on 64-bit while
+> preserving its exact behavior. **Golden output is the contract:** every change
+> must keep the golden tests passing (byte-identical), and any behavior change
+> must be deliberate, justified, and re-baselined in the same commit. New game
+> features, gameplay tweaks, and scope expansion are out of bounds. See
+> [BUILD_HISTORY.md](BUILD_HISTORY.md) for the full modernization record.
 
 ## Targets
 
@@ -61,6 +77,14 @@ The scripts auto-detect the repo root and look for binaries at
 - `tests/` — golden-test fixtures and golden files
 - `run/` — run/test driver scripts and scratch run directories
 - `doc/` — assorted G2 design/reference notes
+- `CLAUDE.md` — working guidance (build, test, conventions)
+- `BUILD_HISTORY.md` — full phase-by-phase modernization record
+- `AUTHORS.md` — authors and credits
+
+## Authors
+
+See [AUTHORS.md](AUTHORS.md). Olympia was created by Rich Skrenta; this
+repository is maintained and modernized by Michael Henderson.
 
 ## License
 
