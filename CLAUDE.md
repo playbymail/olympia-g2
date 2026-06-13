@@ -81,11 +81,15 @@ Scripts auto-detect the repo root and look for binaries at
   must be deliberate and the snapshot updated in the same change with a note on
   why. Modernization changes (prototypes, casts, dead-code removal) must produce
   byte-identical golden output.
-- Build config lives in `CMakeLists.txt`. The per-target compile flags are
-  inlined into each `add_executable` block (see lines ~221 and ~266), *not*
-  applied via the `phase_N_build_flags()` functions — those are roadmap
-  scaffolding (defined, not yet called). `LEGACY_C_FLAGS_STRICT` is likewise
-  staged but unused.
+- Build config lives in `CMakeLists.txt`. The shared warning set is applied to
+  both targets via the `olympia_compile_flags()` helper (issue #14); per-target
+  additions — optimization level (`-O1`/`-Og`) and the olympia-only
+  `-Wformat -Werror=format` — sit at the call site, and sanitizers come via
+  `olympia_enable_sanitizers()`. The old `phase_N_build_flags()` /
+  `legacy_build_flags()` scaffolding and the `LEGACY_C_FLAGS` / `…_STRICT`
+  variables were retired in #14 (deleted outright — recover from git history if
+  ever needed). Read the conventions block at the top of `CMakeLists.txt` and
+  the [Warning policy](#warning-policy) before touching flags.
 - **C11 standard** is set both project-wide (`CMAKE_C_STANDARD 11` /
   `…_REQUIRED ON` / `CMAKE_C_EXTENSIONS OFF`, lines 4–6) *and* declared
   explicitly per target via `target_compile_features(<tgt> PRIVATE c_std_11)`
@@ -96,9 +100,11 @@ Scripts auto-detect the repo root and look for binaries at
 
 ## Modernization status
 
-A 5-phase ladder is documented as `phase_N_build_flags()` functions in
-`CMakeLists.txt`. What is actually *enforced* is inlined into both targets as
-`-Werror`. Current state:
+A modernization ladder (Phases 1–8) drove each 32→64-bit warning class to zero
+and locked it as `-Werror`. The enforced set is now applied to both targets via
+the single `olympia_compile_flags()` helper in `CMakeLists.txt` (consolidated in
+issue #14; it was previously inlined per target — the per-phase sections below
+still describe it as "inlined", which is the historical state). Current state:
 
 | Phase | Scope | State |
 |-------|-------|-------|
@@ -112,6 +118,7 @@ A 5-phase ladder is documented as `phase_N_build_flags()` functions in
 | 7 | `sign-conversion` | ✅ enforced (`-Werror`) |
 | 8 | `return-type` + `return-mismatch` | ✅ enforced (`-Werror`); register-garbage class |
 | 13 | `implicit-int-conversion` (Clang-guarded) — **separate code-quality track, NOT a 64-bit hazard** | ✅ enforced (`-Werror`) |
+| 14 | Housekeeping: consolidate flags into `olympia_compile_flags()`, remove dead `SYSV` branch, set warning policy | ✅ done (not a warning class) |
 
 Phases 1–8 are complete and locked in — the dangerous 32→64-bit pointer/int
 hazards (bad casts, int/pointer conversions, and implicitly-declared functions
@@ -122,8 +129,10 @@ signed/unsigned implicit conversions are explicit, every non-void function now
 returns a value on all paths (or was retyped to `void`) so no caller reads a
 garbage register, and the `asan-ubsan` preset builds + runs the golden flow
 clean. Issue #13 (`implicit-int-conversion`) is also done, but as a **separate
-code-quality track, not a 64-bit phase** — see below. The remaining ladder work
-is issue #14 (flag consolidation).
+code-quality track, not a 64-bit phase** — see below. The ladder is now **fully
+complete**: issue #14 (the final item) consolidated the per-phase flags into one
+`olympia_compile_flags()` helper, removed the dead `SYSV` branch, and set the
+post-64-bit [warning policy](#warning-policy) for triaging new warnings.
 
 > **Note:** the sister **G1** repo (`../olympia-g1`) also completed Phase 3.5
 > and Phase 4. Its `CLAUDE.md` records those changes, and the shared method is
@@ -480,3 +489,94 @@ implicit narrowing already truncated exactly this way → golden byte-identical)
 Probe (`-Wimplicit-int-conversion` at `-ferror-limit=0`, prefix-matched) reports
 0 on both presets; both targets build clean with the new `-Werror` flag; debug
 and asan-ubsan golden gates both `YES` (byte-identical) and asan/ubsan clean.
+
+### Issue #14 — flag consolidation + dead SYSV removal + warning policy ✅ done
+
+The **final item on the modernization ladder** — pure end-of-ladder housekeeping,
+no warning class. Mirrors `../olympia-g1#18` (+ `#17` + `#15`). Three sub-tasks,
+each landed as its own golden-verified commit (structural CMake change kept
+strictly separate from the source change):
+
+- **Consolidated the flags.** The Phase 1–8 + Clang-guarded `-W.../-Werror=...`
+  pairs were previously **inlined** into both `target_compile_options` blocks.
+  They now live in a single `olympia_compile_flags(tgt)` helper applied
+  identically to both targets (mirrors G1's `olympia_compile_flags`). Per-target
+  bits stay at the call site: the optimization level (`-O1` mapgen / `-Og`
+  olympia) and the **olympia-only** `-Wformat -Werror=format` (the engine prints
+  player-facing text and the non-literal-format sites were fixed in #6, so the
+  full format class is an error with no sub-suppression; mapgen never carried
+  it). Behavior-neutral: the only effective flag-stream delta (verified against
+  `compile_commands.json` per target) was dropping four **dead** `-Wno-` entries
+  — `incompatible-pointer-types`, `int-conversion`, `int-to-pointer-cast`,
+  `pointer-to-int-cast` — each already overridden by the later `-Werror=` for the
+  same class (later-flag-wins), so those classes stay enforced.
+- **Retired the dead scaffolding (deleted outright).** `legacy_build_flags()`,
+  `phase_1..5_build_flags()`, and the `LEGACY_C_FLAGS` / `LEGACY_C_FLAGS_STRICT`
+  variables were all unused once the flags were consolidated. Deleted (not kept
+  as commented history) — the per-phase story lives here in CLAUDE.md and in git
+  history. Maintainer decision (2026-06-13).
+- **Removed the dead `#ifdef SYSV` branch.** `olympia/z.h` carried a live-but-dead
+  `#ifdef SYSV` block shadowing `bzero`/`bcopy` with `memset`/`memcpy`; `SYSV` is
+  never defined anywhere in the tree, so the macros never expanded. `mapgen/z.h`
+  already had its copy commented out. Both replaced with a note. Output-neutral
+  by construction, and it makes the Phase-4 invariant explicit: `rnd.c` includes
+  `z.h` precisely *because* those macros were `#ifdef SYSV` (off on macOS) so the
+  golden-critical MD5 stayed on real libc `bzero`/`bcopy` (from `<strings.h>`).
+  With the dead branch gone, the macros provably never apply anywhere. Mirrors
+  G1 `#15` (G2 has **no `USE_OUR_RND`**, so only the `SYSV` half applied).
+
+Both commits: golden gate `YES` on debug and asan-ubsan, byte-identical,
+asan/ubsan clean.
+
+## Warning policy
+
+The post-64-bit policy for what is an error, what is suppressed, and how a new
+warning gets triaged. (This is the still-open G1 `#17` question, answered here
+for G2.) The authoritative list is the conventions block + `olympia_compile_flags()`
+in `CMakeLists.txt`; this section is the rationale.
+
+**Three tiers:**
+
+1. **Enforced (`-Werror`).** Every class on the Phase 1–8 ladder, plus the
+   olympia-only format class (#5/#6) and the `implicit-int-conversion`
+   code-quality class (#13). Each was driven to **zero** across the tree and
+   locked. These are written as an explicit `-Wfoo -Werror=foo` pair, one class
+   per line — the bare `-Wfoo` is redundant (the `-Werror=` already enables it)
+   but is kept deliberately as a record that the class is at zero and locked.
+   **Do not** collapse the pairs or relax any to a non-error.
+
+2. **Suppressed (`-Wno-foo`).** Legacy idioms this ~60K-line codebase still leans
+   on and that are **not** being chased right now — `-Wno-parentheses`,
+   `-Wno-comment`, `-Wno-dangling-else`, `-Wno-macro-redefined`, `-Wno-multichar`,
+   `-Wno-logical-not-parentheses`, `-Wno-compare-distinct-pointer-types`,
+   `-Wno-non-literal-null-conversion`, `-Wno-deprecated-declarations`,
+   `-Wno-extra-tokens`, `-Wno-incompatible-library-redeclaration`,
+   `-Wno-tautological-constant-out-of-range-compare`. These are **stylistic /
+   low-risk**, not 64-bit hazards. They stay suppressed until someone opens a
+   dedicated cleanup track (the same option-(b) path #13 took for
+   `implicit-int-conversion`: drive the whole class to zero in one focused pass,
+   then promote to `-Werror` — never partially).
+
+3. **Clang-only spellings.** `-Wshorten-64-to-32` (#10) and
+   `-Wimplicit-int-conversion` (#13) are Clang-only diagnostics (GCC folds them
+   into the broader `-Wconversion`); they sit behind
+   `if (CMAKE_C_COMPILER_ID MATCHES "Clang")`. `-Wreturn-mismatch` is **not**
+   Clang-gated in G2 (it sits in the common set) — keep it there.
+
+**Triaging a new warning** (e.g. a compiler upgrade surfaces a new class, or a
+new file trips something):
+
+- If it is a **64-bit correctness hazard** (truncation, pointer/int confusion,
+  width, sign, missing return → garbage register), treat it like a ladder phase:
+  drive the class to **zero**, then add the `-Wfoo -Werror=foo` pair to
+  `olympia_compile_flags()`. Never lock a class with live hits remaining.
+- If it is **stylistic / low-risk**, either fix the few sites or add a
+  documented `-Wno-foo` to the suppression list with a one-line reason. Prefer
+  fixing if the count is small.
+- **Every** flag change must keep the golden gate `YES` on **both** presets
+  (debug and asan-ubsan), byte-identical, asan/ubsan clean — the same invariant
+  every ladder phase held. A pure flag flip (enabling/relaxing enforcement)
+  must be its **own commit**, separate from any structural CMake refactor and
+  from any source change.
+- **No CI.** Gates are run locally (maintainer decision, see *Conventions*);
+  do not wire warning enforcement into CI.
