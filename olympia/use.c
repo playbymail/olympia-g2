@@ -901,6 +901,7 @@ exp_s(int level)
 	default:
 		assert(FALSE);
 	}
+	return "";
 }
 
 
@@ -1561,7 +1562,7 @@ v_study(struct command *c)
  *  Use learn_skill() to grant a character a skill
  */
 
-int
+void
 learn_skill(int who, int sk)
 {
 	struct skill_ent *p;
