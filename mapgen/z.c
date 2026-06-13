@@ -33,7 +33,7 @@ my_malloc(unsigned size)
 
 	bzero(p, size);
 
-	*((int *) p) = size;
+	*((int *) p) = (int)size;	/* size header slot, value fits */
 	*((int *) (p + size)) = 0xABCF;
 
 	return p + sizeof(int);
@@ -55,7 +55,7 @@ my_realloc(void *ptr, unsigned size)
 
 	p = realloc(p, size + sizeof(int));
 
-	*((int *)p) = size;
+	*((int *)p) = (int)size;	/* size header slot, value fits */
 	*((int *) (p + size)) = 0xABCF;
 
 	if (p == NULL)

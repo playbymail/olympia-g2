@@ -109,7 +109,7 @@ seller_list(int where, int except)
 	next_char_here;
 
 	if (trades_len(l) > 0)
-		qsort(l, trades_len(l), sizeof(struct trade *), seller_comp);
+		qsort(l, (size_t)trades_len(l), sizeof(struct trade *), seller_comp);
 
 	loop_trade(where, t)
 	{
