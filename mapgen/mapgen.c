@@ -261,7 +261,7 @@ int main(void)
 }
 
 
-int open_fps(void)
+void open_fps(void)
 {
 
 	loc_fp = fopen("loc", "w");
@@ -287,7 +287,7 @@ int open_fps(void)
 }
 
 
-int clear_alloc_flag(void)
+void clear_alloc_flag(void)
 {
 	int i;
 
@@ -324,7 +324,7 @@ rnd_alloc_num(int low, int high)
 }
 
 
-int map_init(void)
+void map_init(void)
 {
 	int i, j;
 
@@ -334,7 +334,7 @@ int map_init(void)
 }
 
 
-int read_map(void)
+void read_map(void)
 {
 	char buf[LEN];
 	int row, col;
@@ -684,7 +684,7 @@ int read_map(void)
 }
 
 
-int add_road(struct tile *from, int to_loc, int hidden, char *name)
+void add_road(struct tile *from, int to_loc, int hidden, char *name)
 {
 	struct road *r;
 
@@ -698,7 +698,7 @@ int add_road(struct tile *from, int to_loc, int hidden, char *name)
 }
 
 
-int link_roads(struct tile *from, struct tile *to, int hidden, char *name)
+void link_roads(struct tile *from, struct tile *to, int hidden, char *name)
 {
 	int i;
 	int n = 0;
@@ -755,7 +755,7 @@ int alloc_inside(void)
 }
 
 
-int dump_continents(void)
+void dump_continents(void)
 {
 	int i;
 	int n;
@@ -771,7 +771,7 @@ int dump_continents(void)
 }
 
 
-int print_inside_locs(int n)
+void print_inside_locs(int n)
 {
 	int i;
 	int count = 0;
@@ -797,7 +797,7 @@ int print_inside_locs(int n)
 }
 
 
-int print_map(void)
+void print_map(void)
 {
 	int row, col;
 	int flag;
@@ -884,7 +884,7 @@ int print_map(void)
 }
 
 
-int print_sublocs(void)
+void print_sublocs(void)
 {
 	int i;
 	int sl;
@@ -937,7 +937,7 @@ int print_sublocs(void)
 }
 
 
-int print_subloc_gates(int n)		/* and inside buildings... */
+void print_subloc_gates(int n)		/* and inside buildings... */
 {
 	int i;
 	int count = 0;
@@ -1045,7 +1045,7 @@ rc_to_region(int row, int col)
 }
 
 
-int dir_assert(void)
+void dir_assert(void)
 {
 	int row, col, reg;
 
@@ -1262,7 +1262,7 @@ int is_port_city(int row, int col)
 }
 
 
-int randomize_dir_vector(void)
+void randomize_dir_vector(void)
 {
 	int i;
 	int one, two, tmp;
@@ -1423,7 +1423,7 @@ char *bridge_dir_s[] = {
  *  Won't put two roads in the same square
  */
 
-int bridge_map_holes(void)
+void bridge_map_holes(void)
 {
 	int row, col;
 	int n;
@@ -1556,7 +1556,7 @@ int bridge_corner_sup(int row, int col)
 
 
 
-int bridge_caddy_corners(void)
+void bridge_caddy_corners(void)
 {
 	int row, col;
 
@@ -1568,7 +1568,7 @@ int bridge_caddy_corners(void)
 }
 
 
-int bridge_mountain_sup(int row, int col)
+void bridge_mountain_sup(int row, int col)
 {
 	struct tile *from;
 	struct tile *to;
@@ -1604,7 +1604,7 @@ int bridge_mountain_sup(int row, int col)
 }
 
 
-int bridge_mountain_ports(void)
+void bridge_mountain_ports(void)
 {
 	int row, col;
 
@@ -1618,7 +1618,7 @@ int bridge_mountain_ports(void)
 }
 
 
-int make_roads(void)
+void make_roads(void)
 {
 
 	clear_province_marks();
@@ -1628,7 +1628,7 @@ int make_roads(void)
 }
 
 
-int print_continent(int i)
+void print_continent(int i)
 {
 	char coord[50];
 	char gates[50];
@@ -1662,7 +1662,7 @@ int print_continent(int i)
 }
 
 
-int count_continents(void)
+void count_continents(void)
 {
 	int i;
 	char *name;
@@ -1705,7 +1705,7 @@ int count_continents(void)
 }
 
 
-int fix_terrain_land(void)
+void fix_terrain_land(void)
 {
 	int row, col;
 	struct tile *p;
@@ -1732,7 +1732,7 @@ fprintf(stderr, "    assuming 'forest'\n");
 }
 
 
-int set_regions(void)
+void set_regions(void)
 {
 	FILE *fp;
 	char buf[LEN];
@@ -1902,7 +1902,7 @@ int flood_water_inside(int row, int col, int ins)
  *  Name groups of provinces
  */
 
-int set_province_clumps(void)
+void set_province_clumps(void)
 {
 	FILE *fp;
 	char buf[LEN];
@@ -2675,7 +2675,7 @@ int mark_bad_locs(void)
  *  (Except for the lost city and the city of the ancients)
  */
 
-int not_random_province(int *row, int *col)		/* oh, hack upon hack ... */
+void not_random_province(int *row, int *col)		/* oh, hack upon hack ... */
 {
 	int n;
 	int r, c;
@@ -2717,7 +2717,7 @@ int not_place_random_subloc(int kind, int hidden)
 }
 
 
-int random_province(int *row, int *col, int terr)
+void random_province(int *row, int *col, int terr)
 {
 	int n;
 	int r, c;
@@ -2994,7 +2994,7 @@ struct {
 };
 
 
-int make_appropriate_subloc(int row, int col)
+void make_appropriate_subloc(int row, int col)
 {
 	int terr;
 	int sum = 0;
