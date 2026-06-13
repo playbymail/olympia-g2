@@ -447,8 +447,11 @@ offending paths. `--update` regenerates the manifest from the current run; only
 run it on a tree whose output change you intend. (G3/tag will each need their
 own `golden_check.sh` — copy this one and adjust, per "Step 0" above.)
 
-Note: `tests/mapgen/golden` is a **stale 32-bit baseline** and diverges from
-64-bit output even on a clean tree — it is *not* the gate.
+Note: `tests/mapgen/golden` is a **stale 32-bit baseline** (kept only as a
+historical artifact — see `tests/mapgen/golden/README.md`) and diverges from
+64-bit output even on a clean tree. It is *not* the gate and is consumed by
+nothing. The 32-bit build support (`BUILD_32BIT`) that produced it was removed
+in issue #8 — the LP64 golden is the sole contract.
 
 > **Known non-determinism in G2 (read before trusting the gate).** The engine
 > has a pre-existing build-to-build non-determinism: `run/olympia/lib/fact/100`

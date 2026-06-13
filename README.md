@@ -34,20 +34,12 @@ Without presets:
 mkdir build && cd build && cmake .. && cmake --build .
 ```
 
-### 32-bit build (Linux, for golden-file generation)
-
-```bash
-mkdir build32 && cd build32
-cmake -DBUILD_32BIT=ON ..   # requires gcc-multilib
-cmake --build .
-```
-
 ## Running / golden tests
 
 Build first (default `debug` preset), then:
 
 ```bash
-# mapgen: generates gate/loc/road and can be compared to tests/mapgen/golden
+# mapgen: generates gate/loc/road (inputs to the olympia run below)
 ./run/mapgen/mapgen.sh
 
 # olympia: extracts fixtures, runs a turn, saves the database
