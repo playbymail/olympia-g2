@@ -81,11 +81,12 @@ function(olympia_compile_flags tgt)
         -Wsign-conversion -Werror=sign-conversion                        # Phase 7 (#11)
         # A non-void function that falls off the end leaves the caller reading a
         # garbage register -- on LP64 an 8-byte garbage long/pointer. This is the
-        # class that caused the fact/100 "st -32" flicker (#9) via i_use(). Not
-        # Clang-only (GCC names return-mismatch under -Wreturn-type, but the
-        # explicit pair is harmless and documents the locked class).
+        # class that caused the fact/100 "st -32" flicker (#9) via i_use().
+        # Portable: -Wreturn-type catches fall-off-the-end on every compiler and
+        # only warns by default, so the -Werror pair is needed everywhere. The
+        # companion bare-`return;`-in-non-void class is Clang-guarded below
+        # (-Wreturn-mismatch), since GCC enforces it without the flag. (#18)
         -Wreturn-type -Werror=return-type                                # Phase 8 (#12)
-        -Wreturn-mismatch -Werror=return-mismatch                        # Phase 8 (#12)
     )
 
     # Clang-only diagnostic spellings; GCC folds each into a broader class
@@ -94,6 +95,12 @@ function(olympia_compile_flags tgt)
         target_compile_options(${tgt} PRIVATE
             # The LP64 width-truncation class (long/size_t/ssize_t into int).
             -Wshorten-64-to-32 -Werror=shorten-64-to-32                  # Phase 6 (#10)
+            # Clang splits bare `return;` in a non-void function out of
+            # -Wreturn-type as its own class; GCC enforces it anyway (default
+            # permerror on >=14, folded into -Wreturn-type on <=13). Guarding the
+            # Clang-only spelling avoids a fatal "unrecognized option" on GCC <=13
+            # (the option did not exist before GCC 14) and loses no coverage.
+            -Wreturn-mismatch -Werror=return-mismatch                    # Phase 8 (#18)
             # Code-quality, NOT a 64-bit hazard: int->short/char narrowing into
             # entity struct fields. Identical on ILP32/LP64.
             -Wimplicit-int-conversion -Werror=implicit-int-conversion    # issue #13
